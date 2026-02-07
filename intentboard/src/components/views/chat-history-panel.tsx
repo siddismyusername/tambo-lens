@@ -56,16 +56,55 @@ export function ChatHistoryPanel({ collapsed = false }: ChatHistoryPanelProps) {
   const prevThreadIdRef = useRef<string | null>(null);
 
   // ── Restore thread from localStorage on first mount ─────────────────────
+  // Wait until the thread list query has settled, then attempt to restore
+  // with retries. The component registry (`componentList` inside
+  // TamboRegistryProvider) is populated via a useEffect that may not have
+  // flushed yet when isLoadingThreads becomes false. If switchCurrentThread
+  // throws because a component isn't found, we retry after a delay to give
+  // the registry state time to update.
   useEffect(() => {
     if (restoredFromStorage) return;
+    if (isLoadingThreads) return;
+
     setRestoredFromStorage(true);
 
     const savedId = getSavedThreadId();
-    if (savedId && savedId !== currentThreadId) {
-      // fetch=true to load messages from server
-      switchCurrentThread(savedId, true);
-    }
-  }, [restoredFromStorage, currentThreadId, switchCurrentThread]);
+    if (!savedId || savedId === currentThreadId) return;
+
+    let cancelled = false;
+    let attempt = 0;
+    const maxAttempts = 6;
+
+    const tryRestore = () => {
+      if (cancelled) return;
+      attempt++;
+      const delay = attempt === 1 ? 250 : attempt * 300; // 250, 600, 900, 1200, 1500, 1800
+
+      setTimeout(async () => {
+        if (cancelled) return;
+        try {
+          await switchCurrentThread(savedId, true);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg.includes("not found") && attempt < maxAttempts) {
+            // Component registry likely not populated yet — retry
+            tryRestore();
+          } else {
+            console.warn(
+              `Failed to restore thread after ${attempt} attempt(s):`,
+              msg
+            );
+            saveThreadId(null);
+          }
+        }
+      }, delay);
+    };
+
+    tryRestore();
+    return () => {
+      cancelled = true;
+    };
+  }, [restoredFromStorage, isLoadingThreads, currentThreadId, switchCurrentThread]);
 
   // ── Persist thread ID whenever it changes ───────────────────────────────
   useEffect(() => {
@@ -104,10 +143,14 @@ export function ChatHistoryPanel({ collapsed = false }: ChatHistoryPanelProps) {
   }, [startNewThread]);
 
   const handleSwitchThread = useCallback(
-    (threadId: string) => {
+    async (threadId: string) => {
       if (threadId === currentThreadId) return;
-      switchCurrentThread(threadId, true);
-      saveThreadId(threadId);
+      try {
+        await switchCurrentThread(threadId, true);
+        saveThreadId(threadId);
+      } catch {
+        console.warn("Failed to switch to thread", threadId);
+      }
     },
     [currentThreadId, switchCurrentThread]
   );

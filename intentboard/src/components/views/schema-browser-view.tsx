@@ -19,7 +19,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   TableProperties,
   RefreshCw,
@@ -47,7 +46,7 @@ export function SchemaBrowserView() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 border-b">
         <div className="flex items-center gap-2">
@@ -74,7 +73,7 @@ export function SchemaBrowserView() {
       </div>
 
       {/* Schema content */}
-      <ScrollArea className="flex-1 p-6">
+      <div className="flex-1 overflow-y-auto p-6">
         {loading && !schema ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -216,7 +215,7 @@ export function SchemaBrowserView() {
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }
