@@ -251,6 +251,29 @@ export async function getDashboard(id: string) {
   );
 }
 
+export async function updateDashboard(
+  id: string,
+  data: { name?: string; description?: string; components?: unknown[] }
+): Promise<{ id: string }> {
+  const row = await queryOne<{ id: string }>(
+    `UPDATE dashboards
+     SET name = COALESCE($2, name),
+         description = COALESCE($3, description),
+         components = COALESCE($4, components),
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING id`,
+    [
+      id,
+      data.name ?? null,
+      data.description ?? null,
+      data.components ? JSON.stringify(data.components) : null,
+    ]
+  );
+  if (!row) throw new Error("Dashboard not found");
+  return row;
+}
+
 // ──── Query Audit Log ────────────────────────────────────────────────────────
 
 export async function logQuery(entry: {

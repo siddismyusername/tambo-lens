@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveDashboard, getDashboards, getDashboard } from "@/lib/services/data-source-service";
+import { saveDashboard, getDashboards, getDashboard, updateDashboard } from "@/lib/services/data-source-service";
 import type { ApiResponse } from "@/lib/types";
 
 export async function GET(
@@ -37,6 +37,29 @@ export async function POST(
     const body = await req.json();
     const result = await saveDashboard(body);
     return NextResponse.json({ success: true, data: result }, { status: 201 });
+  } catch (err) {
+    return NextResponse.json(
+      { success: false, error: err instanceof Error ? err.message : "Error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  req: NextRequest
+): Promise<NextResponse<ApiResponse<{ id: string }>>> {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "Missing dashboard id" },
+        { status: 400 }
+      );
+    }
+    const body = await req.json();
+    const result = await updateDashboard(id, body);
+    return NextResponse.json({ success: true, data: result });
   } catch (err) {
     return NextResponse.json(
       { success: false, error: err instanceof Error ? err.message : "Error" },

@@ -70,6 +70,12 @@ When users ask analytical questions:
 3. Write safe SELECT queries using run_select_query
 4. Present results using the appropriate visualization component
 
+IMPORTANT SQL best practices:
+- When displaying data in charts, ALWAYS use human-readable labels, not raw IDs. JOIN related tables to get names/titles instead of showing foreign key IDs.
+  Example: Instead of "SELECT product_id, SUM(amount)" use "SELECT p.name, SUM(o.amount) FROM orders o JOIN products p ON o.product_id = p.id"
+- Use column aliases (AS) to give clean, readable column names for chart labels.
+- When a table has both an ID column and a name/title column, always prefer the name for display.
+
 Always prefer visual representations:
 - Single metrics → KPICard
 - Multiple metrics → MetricGrid

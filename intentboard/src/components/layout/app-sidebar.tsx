@@ -2,6 +2,7 @@
 
 import { useAppContext } from "@/components/providers/app-context";
 import { useDataSources } from "@/hooks/use-data-sources";
+import { ChatHistoryPanel } from "@/components/views/chat-history-panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -74,6 +75,8 @@ export function AppSidebar() {
             <item.icon className="h-4 w-4" />
           </Button>
         ))}
+        <Separator />
+        <ChatHistoryPanel collapsed />
       </div>
     );
   }
@@ -112,6 +115,13 @@ export function AppSidebar() {
           </Button>
         ))}
       </nav>
+
+      <Separator />
+
+      {/* Chat History */}
+      <div className="p-3">
+        <ChatHistoryPanel />
+      </div>
 
       <Separator />
 

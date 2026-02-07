@@ -2,6 +2,7 @@
 
 import { useTambo, useTamboThreadInput } from "@tambo-ai/react";
 import { useAppContext } from "@/components/providers/app-context";
+import { useDashboard } from "@/components/providers/dashboard-context";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -21,6 +22,8 @@ import {
   LayoutGrid,
   FileText,
   Gauge,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Markdown } from "@/components/ui/markdown";
@@ -43,6 +46,7 @@ export function AnalyticsChat() {
   const { thread, generationStage } = useTambo();
   const { value, setValue, submit } = useTamboThreadInput();
   const { activeDataSourceId } = useAppContext();
+  const { pinItem, unpinByFingerprint, isItemPinned } = useDashboard();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -184,11 +188,40 @@ export function AnalyticsChat() {
                       ))}
 
                     {/* Rendered Generative UI Component — pointer-events-auto ensures interactivity */}
-                    {message.renderedComponent && (
-                      <div className="mt-3 relative z-10 pointer-events-auto">
-                        {message.renderedComponent}
-                      </div>
-                    )}
+                    {message.renderedComponent && (() => {
+                      const compName = message.component?.componentName ?? "";
+                      const compProps = (message.component?.props ?? {}) as Record<string, unknown>;
+                      const pinned = compName ? isItemPinned(compName, compProps) : false;
+
+                      return (
+                        <div className="mt-3 relative z-10 pointer-events-auto group">
+                          {message.renderedComponent}
+                          {/* Pin / Unpin button — visible on hover */}
+                          {compName && (
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="sm"
+                                variant={pinned ? "secondary" : "outline"}
+                                className="h-7 gap-1 text-xs shadow-sm bg-background/90 backdrop-blur-sm"
+                                onClick={() => {
+                                  if (pinned) {
+                                    unpinByFingerprint(compName, compProps);
+                                  } else {
+                                    pinItem(compName, compProps);
+                                  }
+                                }}
+                              >
+                                {pinned ? (
+                                  <><PinOff className="h-3 w-3" /> Pinned</>
+                                ) : (
+                                  <><Pin className="h-3 w-3" /> Pin to Dashboard</>
+                                )}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
