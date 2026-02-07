@@ -1,0 +1,427 @@
+📘 Project Specification Report
+Project Name: IntentBoard
+An Intent‑Driven Generative Analytics Layer for Existing Business Databases
+
+1. Executive Summary
+Modern businesses store vast amounts of data in relational and document databases, yet extracting insights from this data remains slow, technical, and fragmented. Traditional BI tools require manual dashboard creation, SQL expertise, and constant maintenance, creating a dependency on data teams and limiting insight velocity.
+
+IntentBoard solves this problem by acting as a plug‑and‑play AI interface on top of existing databases. By securely connecting to a company’s current data sources and leveraging Generative UI (GenUI) powered by Tambo SDK and Model Context Protocol (MCP), IntentBoard allows users to explore, analyze, and visualize data using natural language, without writing SQL or building dashboards manually.
+
+The system dynamically generates UI components (charts, tables, summaries) based on user intent while strictly enforcing data access permissions and query safety.
+
+2. Problem Statement
+2.1 Current Challenges
+Business data lives in MySQL, PostgreSQL, MongoDB, but access requires:
+
+SQL knowledge
+
+BI tooling expertise
+
+Manual dashboard design
+
+Existing BI tools:
+
+Have steep learning curves
+
+Are static and slow to adapt
+
+Create analyst bottlenecks
+
+AI chat tools:
+
+Lack secure, structured data access
+
+Cannot maintain persistent UI state
+
+Are unsafe when directly connected to databases
+
+2.2 Opportunity
+There is a clear gap for a system that:
+
+Works directly on existing databases
+
+Requires zero data migration
+
+Converts user intent → safe queries → dynamic UI
+
+Is secure, auditable, and enterprise‑ready
+
+3. Project Objectives
+Primary Objectives
+Enable users to connect their existing databases securely
+
+Allow fine‑grained authorization of AI access to data
+
+Support natural‑language analytics and exploration
+
+Generate dynamic, persistent dashboards via Generative UI
+
+Maintain strict safety and permission boundaries
+
+Secondary Objectives
+Reduce dependency on SQL and BI teams
+
+Improve time‑to‑insight
+
+Demonstrate a real‑world application of Tambo + MCP
+
+4. Target Users
+User Type	Needs
+Founders / Executives	High‑level insights, KPIs
+Product Managers	Funnel & usage analysis
+Operations Teams	Trends, anomalies
+Analysts	Faster exploratory analysis
+Developers	Safe AI access to data
+5. Supported Data Sources (Phase 1)
+Database	Connection Mode
+PostgreSQL (Supabase)	Connection string / service role
+MySQL	Host, user, password
+MongoDB Atlas	URI + database
+All connections are read‑only by default.
+
+6. Functional Requirements
+6.1 Data Source Management
+Add / remove data sources
+
+Secure credential storage (encrypted)
+
+Test connection on setup
+
+Label and manage multiple data sources
+
+6.2 Schema Introspection
+Automatically fetch:
+
+Tables / collections
+
+Columns and data types
+
+Relationships (SQL)
+
+Display schema in UI
+
+Optional preview rows (configurable)
+
+6.3 AI Authorization & Permissions
+User selects:
+
+Allowed tables / collections
+
+Restricted tables
+
+Optional:
+
+Column masking
+
+Row limits
+
+Permissions enforced at query execution level
+
+6.4 Conversational Analytics
+Natural language queries:
+
+Aggregations
+
+Comparisons
+
+Trends
+
+Summaries
+
+Context‑aware follow‑ups
+
+Multi‑turn conversations
+
+6.5 Generative UI (via Tambo)
+Dynamic rendering of:
+
+Charts
+
+Tables
+
+KPI cards
+
+Summaries
+
+Zod‑validated props
+
+Design‑system‑safe components
+
+Persistent dashboards using withInteractable
+
+6.6 Dashboard Persistence
+Save generated views
+
+Reload dashboards
+
+Update via conversation
+
+Share within organization (future)
+
+7. Non‑Functional Requirements
+7.1 Security
+Encrypted credentials
+
+Read‑only DB access
+
+No direct DB access from frontend
+
+AI restricted to authorized schema only
+
+7.2 Performance
+Query timeouts
+
+Result size limits
+
+Streaming UI updates
+
+7.3 Reliability
+Graceful AI failure handling
+
+Query retries with guardrails
+
+UI schema validation
+
+7.4 Scalability
+Multi‑tenant architecture
+
+Multiple data sources per org
+
+Horizontal MCP server scaling
+
+8. System Architecture
+8.1 High‑Level Architecture
+Frontend (React + Tambo)
+ ├─ Conversational UI
+ ├─ Generative Components
+ └─ Persistent Dashboards
+
+Backend (IntentBoard Core)
+ ├─ Auth & Org Management
+ ├─ Credential Vault
+ ├─ Schema Registry
+ ├─ Permission Engine
+ └─ MCP Orchestration
+
+MCP Servers
+ ├─ Postgres MCP
+ ├─ MySQL MCP
+ └─ MongoDB MCP
+
+User Databases (External)
+9. Model Context Protocol (MCP) Design
+9.1 MCP Server Responsibilities
+Execute guarded queries
+
+Expose schema metadata
+
+Enforce permission rules
+
+Prevent unsafe operations
+
+9.2 MCP Capabilities
+Resources
+Table schemas
+
+Column metadata
+
+Sample rows (optional)
+
+Tools
+run_select_query
+
+run_aggregation
+
+describe_table
+
+All tools:
+
+SELECT‑only
+
+Scoped to authorized tables
+
+Auto‑LIMIT enforced
+
+10. Query Guardrails
+Validation Pipeline
+AI proposes query
+
+Permission check
+
+SQL / Mongo validation
+
+Complexity & limit check
+
+Execution
+
+Structured result returned
+
+Invalid queries are rejected and retried by AI safely.
+
+11. Role of Tambo SDK
+Responsibility	Handled by Tambo
+Generative UI	✅
+State persistence	✅
+Streaming UX	✅
+Schema validation	✅
+Database access	❌
+Credential storage	❌
+Tambo ensures safe, deterministic UI generation on top of probabilistic AI outputs.
+
+12. Technology Stack
+Frontend
+React
+
+TypeScript
+
+Tambo SDK
+
+Zod
+
+Tailwind / Design System
+
+Backend
+Node.js / Bun
+
+MCP SDK
+
+PostgreSQL (internal metadata)
+
+Encryption (KMS / Vault)
+
+AI
+OpenAI / compatible LLM
+
+Function / tool calling
+
+Streaming responses
+
+13. MVP Scope
+Included
+Postgres (Supabase)
+
+Table authorization UI
+
+Conversational analytics
+
+Generated charts & dashboards
+
+Safe query execution
+
+Excluded (Future)
+Write operations
+
+Cross‑DB joins
+
+Real‑time streaming data
+
+Advanced governance
+
+14. Risks & Mitigations
+Risk	Mitigation
+AI hallucinated queries	Strict MCP validation
+Data leakage	Explicit allowlists
+Latency	Streaming UI
+Schema drift	Periodic introspection
+15. Success Metrics
+Time‑to‑first insight < 2 minutes
+
+Zero unauthorized queries
+
+Dashboard creation without SQL
+
+Positive user feedback on usability
+
+16. Conclusion
+IntentBoard represents a shift from static BI dashboards to intent‑driven analytics systems. By combining secure database access, MCP‑based orchestration, and Tambo‑powered Generative UI, the platform enables organizations to unlock insights from their existing data faster, safer, and with dramatically less friction.
+
+This project demonstrates a production‑ready application of Generative UI and positions IntentBoard as a foundational layer for the next generation of AI‑native business software.
+
+
+
+📘 SRS Update — Frontend Component System (shadcn/ui)
+1. Revision Summary
+This update amends the Software Requirements Specification (SRS) to formally include shadcn/ui as the standardized frontend component library used in the system, in conjunction with Tailwind CSS and Tambo SDK.
+
+2. Updated Technology Stack (SRS Section)
+2.1 Frontend Technology Stack
+Layer	Technology
+Framework	React (Next.js App Router)
+Language	TypeScript
+Styling	Tailwind CSS
+Component System	shadcn/ui
+Generative UI Orchestration	Tambo SDK
+Schema Validation	Zod
+3. Frontend Architecture Requirements (Updated)
+3.1 Component System Requirements
+FR-FE-01
+The system shall use shadcn/ui as the primary source of reusable frontend UI components.
+
+FR-FE-02
+All visual UI elements rendered by the application—including buttons, dialogs, cards, tables, inputs, dropdowns, and modals—shall be composed using shadcn/ui components styled with Tailwind CSS.
+
+FR-FE-03
+shadcn/ui components shall serve as the base building blocks for all AI‑generated (Generative UI) components registered with the Tambo SDK.
+
+4. Generative UI Integration Requirements (Updated)
+4.1 BYOC (Bring Your Own Component) Compliance
+FR-GEN-01
+All components registered with Tambo for Generative UI rendering shall be:
+
+Implemented as React components
+
+Built using shadcn/ui primitives
+
+Styled exclusively via Tailwind CSS
+
+Validated via Zod schemas
+
+FR-GEN-02
+The AI system shall never generate raw HTML, CSS, or JSX.
+Instead, it shall invoke pre‑built shadcn/ui‑based React components through Tambo’s tool invocation mechanism.
+
+5. Design System & Consistency Requirements
+NFR-UI-01
+The system shall enforce visual consistency by ensuring all AI‑generated UI conforms to the shadcn/ui design system.
+
+NFR-UI-02
+Theme configuration (colors, typography, spacing) shall be centrally managed through Tailwind and shadcn/ui tokens, ensuring brand consistency across all generated dashboards.
+
+NFR-UI-03
+AI‑generated interfaces shall not introduce new visual patterns outside the approved shadcn/ui component set.
+
+6. Accessibility & Usability Requirements
+NFR-A11Y-01
+All frontend components shall inherit shadcn/ui’s accessibility defaults, including:
+
+ARIA attributes
+
+Keyboard navigation
+
+Focus management
+
+NFR-A11Y-02
+AI‑generated UI components must maintain accessibility compliance by construction, as they are composed from accessible shadcn/ui primitives.
+
+7. Rationale (SRS Justification)
+shadcn/ui is selected as the frontend component system because it:
+
+Aligns with modern React and Tailwind best practices
+
+Enables deterministic, reusable UI components
+
+Is compatible with Tambo’s BYOC (Bring Your Own Component) model
+
+Prevents design drift in AI‑generated interfaces
+
+Supports enterprise‑grade accessibility and theming
+
+This choice ensures that Generative UI remains safe, consistent, and production‑ready, even when dynamically assembled by an AI agent.
+
+8. Impact Summary
+Area	Impact
+UI Consistency	Improved
+AI Safety	Strengthened
+Design System Enforcement	Guaranteed
+Developer Velocity	Increased
+Hackathon Readiness	High
