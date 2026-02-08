@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAppContext } from "@/components/providers/app-context";
 import { useDataSources } from "@/hooks/use-data-sources";
 import { useSession, signOut } from "next-auth/react";
@@ -43,6 +44,14 @@ export function AppSidebar() {
 
   const { dataSources, loading } = useDataSources();
   const { data: session } = useSession();
+
+  // Auto-select the first connected data source when none is active
+  useEffect(() => {
+    if (!loading && dataSources.length > 0 && !activeDataSourceId) {
+      const connected = dataSources.find((ds) => ds.status === "connected");
+      setActiveDataSourceId(connected?.id ?? dataSources[0].id);
+    }
+  }, [loading, dataSources, activeDataSourceId, setActiveDataSourceId]);
 
   const navItems = [
     { key: "chat" as const, label: "Analytics Chat", icon: MessageSquare },
