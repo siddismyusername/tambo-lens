@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { useDataSources } from "@/hooks/use-data-sources";
 import { useAppContext } from "@/components/providers/app-context";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,8 @@ export function DataSourcesView() {
   const { dataSources, loading, addDataSource, removeDataSource, testConnection } =
     useDataSources();
   const { setActiveDataSourceId, setActiveView } = useAppContext();
+  const { data: session } = useSession();
+  const isDemo = !!(session?.user as { isDemo?: boolean } | undefined)?.isDemo;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -110,6 +113,7 @@ export function DataSourcesView() {
               </DialogDescription>
             </DialogHeader>
             <AddDataSourceForm
+              isDemo={isDemo}
               onSubmit={async (data) => {
                 const result = await addDataSource(data);
                 if (result) {
@@ -225,8 +229,12 @@ export function DataSourcesView() {
   );
 }
 
+const DEMO_CONNECTION_STRING =
+  "postgresql://postgres:test%40%23%24dbpass%3D@db.opdwefyhrbooojxradkk.supabase.co:5432/postgres";
+
 function AddDataSourceForm({
   onSubmit,
+  isDemo = false,
 }: {
   onSubmit: (data: {
     name: string;
@@ -239,13 +247,14 @@ function AddDataSourceForm({
     password: string;
     ssl?: boolean;
   }) => Promise<void>;
+  isDemo?: boolean;
 }) {
   const [submitting, setSubmitting] = useState(false);
-  const [mode, setMode] = useState<"fields" | "url">("fields");
+  const [mode, setMode] = useState<"fields" | "url">(isDemo ? "url" : "fields");
   const [formData, setFormData] = useState({
-    name: "",
+    name: isDemo ? "Demo Database" : "",
     type: "postgresql",
-    connectionString: "",
+    connectionString: isDemo ? DEMO_CONNECTION_STRING : "",
     host: "",
     port: 5432,
     database: "",

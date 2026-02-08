@@ -324,9 +324,13 @@ export async function logQuery(entry: {
 
 // ──── Demo Data Source Provisioning ──────────────────────────────────────────
 
+/** Pre-configured demo database connection string */
+export const DEMO_CONNECTION_STRING =
+  "postgresql://postgres:test%40%23%24dbpass%3D@db.opdwefyhrbooojxradkk.supabase.co:5432/postgres";
+
 /**
  * Ensure the demo user has at least one data source.
- * Uses DEMO_DATABASE_URL if set, otherwise falls back to DATABASE_URL.
+ * Uses the hardcoded demo connection string.
  * Returns the existing or newly-created data source, or null on failure.
  */
 export async function ensureDemoDataSource(
@@ -336,7 +340,8 @@ export async function ensureDemoDataSource(
   const existing = await getDataSources(userId);
   if (existing.length > 0) return existing[0];
 
-  const demoUrl = process.env.DEMO_DATABASE_URL || process.env.DATABASE_URL;
+  const demoUrl =
+    DEMO_CONNECTION_STRING || process.env.DEMO_DATABASE_URL || process.env.DATABASE_URL;
   if (!demoUrl) return null;
 
   try {
