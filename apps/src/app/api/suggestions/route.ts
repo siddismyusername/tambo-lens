@@ -5,6 +5,8 @@ import {
 } from "@/lib/services/suggestion-service";
 import type { ApiResponse, SuggestedQuestion } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/suggestions?dataSourceId=<uuid>
  * Returns cached suggested questions for a data source.

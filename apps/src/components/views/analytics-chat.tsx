@@ -32,6 +32,7 @@ import {
   Users,
   RefreshCw,
   FileBarChart,
+  Lightbulb,
 } from "lucide-react";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Markdown } from "@/components/ui/markdown";
@@ -77,6 +78,123 @@ const VIZ_OPTIONS = [
 ] as const;
 
 type VizType = (typeof VIZ_OPTIONS)[number]["key"];
+
+// ── "Explain This" deep drill-down ────────────────────────────────────────────
+
+const EXPLAINABLE_COMPONENTS = new Set([
+  "BarChart",
+  "LineChart",
+  "PieChart",
+  "DataTable",
+  "MetricGrid",
+  "KPICard",
+]);
+
+/**
+ * Serialise a rendered component's data into a structured follow-up prompt
+ * that asks the AI to investigate *why* the data looks the way it does.
+ */
+function buildExplainPrompt(
+  componentName: string,
+  props: Record<string, unknown>,
+): string {
+  const title = (props.title as string) || "this data";
+  let dataSummary = "";
+
+  switch (componentName) {
+    case "BarChart":
+    case "PieChart": {
+      const points = (props.data as { label?: string; value?: number }[]) ?? [];
+      const sorted = [...points].sort(
+        (a, b) => (b.value ?? 0) - (a.value ?? 0),
+      );
+      const total = sorted.reduce((s, d) => s + (d.value ?? 0), 0);
+      dataSummary = sorted
+        .map(
+          (d) =>
+            `- ${d.label ?? "?"}: ${d.value ?? 0}${
+              total > 0
+                ? ` (${(((d.value ?? 0) / total) * 100).toFixed(1)}%)`
+                : ""
+            }`,
+        )
+        .join("\n");
+      break;
+    }
+    case "LineChart": {
+      const lineData =
+        (props.data as { label?: string; series?: { name?: string; value?: number }[] }[]) ?? [];
+      const seriesNames = Array.from(
+        new Set(
+          lineData.flatMap((d) => (d.series ?? []).map((s) => s.name ?? "")),
+        ),
+      );
+      dataSummary = `Series: ${seriesNames.join(", ")}\nData points: ${lineData.length}\n`;
+      // Show first, last, and max for each series
+      for (const name of seriesNames) {
+        const vals = lineData
+          .map((d) => ({
+            label: d.label ?? "",
+            value: (d.series ?? []).find((s) => s.name === name)?.value ?? 0,
+          }))
+          .filter((v) => v.value !== 0);
+        if (vals.length > 0) {
+          const max = vals.reduce((a, b) => (b.value > a.value ? b : a));
+          dataSummary += `- ${name}: first=${vals[0].value} (${vals[0].label}), last=${vals[vals.length - 1].value} (${vals[vals.length - 1].label}), peak=${max.value} (${max.label})\n`;
+        }
+      }
+      break;
+    }
+    case "DataTable": {
+      const cols = (props.columns as string[]) ?? [];
+      const rows = (props.rows as string[][]) ?? [];
+      dataSummary = `Columns: ${cols.join(", ")}\nRows shown: ${rows.length}${
+        (props.totalRows as number) ? ` of ${props.totalRows} total` : ""
+      }`;
+      if (rows.length > 0 && rows.length <= 10) {
+        dataSummary += "\nSample data:\n";
+        dataSummary += rows
+          .slice(0, 5)
+          .map((r) => cols.map((c, i) => `${c}=${r[i] ?? "—"}`).join(", "))
+          .join("\n");
+      }
+      break;
+    }
+    case "MetricGrid": {
+      const metrics =
+        (props.metrics as { title?: string; value?: unknown; change?: number }[]) ?? [];
+      dataSummary = metrics
+        .map(
+          (m) =>
+            `- ${m.title ?? "?"}: ${m.value ?? "?"}${
+              m.change != null
+                ? ` (${m.change > 0 ? "+" : ""}${m.change}%)`
+                : ""
+            }`,
+        )
+        .join("\n");
+      break;
+    }
+    case "KPICard": {
+      const value = props.value ?? "?";
+      const change = props.change as number | undefined;
+      const changeLabel = (props.changeLabel as string) || "";
+      dataSummary = `Value: ${value}${
+        change != null ? ` | Change: ${change > 0 ? "+" : ""}${change}%` : ""
+      }${changeLabel ? ` (${changeLabel})` : ""}`;
+      break;
+    }
+  }
+
+  return `[EXPLAIN THIS] The visualization "${title}" (${componentName}) shows the following data:
+
+${dataSummary}
+
+Please act as a senior data analyst and explain WHY the data looks this way:
+1. Run 2-4 follow-up queries to investigate causes — look for correlations, time-period comparisons, segment breakdowns, and contributing factors.
+2. Synthesise your findings into a causal analysis.
+3. Present the explanation as a SummaryCard with specific numbers and actionable highlights.`;
+}
 
 export function AnalyticsChat() {
   const { thread, generationStage } = useTambo();
@@ -292,9 +410,27 @@ export function AnalyticsChat() {
                         return (
                           <div className="mt-3 relative z-10 pointer-events-auto group">
                             {message.renderedComponent}
-                            {/* Pin / Unpin button — visible on hover */}
+                            {/* Hover action buttons — Pin + Explain */}
                             {compName && (
-                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                                {EXPLAINABLE_COMPONENTS.has(compName) && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 gap-1 text-xs shadow-sm bg-background/90 backdrop-blur-sm"
+                                    disabled={isGenerating}
+                                    onClick={() => {
+                                      doSubmit(
+                                        buildExplainPrompt(
+                                          compName,
+                                          compProps,
+                                        ),
+                                      );
+                                    }}
+                                  >
+                                    <Lightbulb className="h-3 w-3" /> Why?
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant={pinned ? "secondary" : "outline"}

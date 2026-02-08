@@ -79,7 +79,8 @@ export function useSuggestedQuestions({
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/suggestions?dataSourceId=${dataSourceId}`
+        `/api/suggestions?dataSourceId=${dataSourceId}&_t=${Date.now()}`,
+        { cache: "no-store" }
       );
       const json = await res.json();
       if (json.success && json.data && json.data.length > 0) {
