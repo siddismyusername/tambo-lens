@@ -31,10 +31,13 @@ import {
   AlertTriangle as AlertTriangleIcon,
   Users,
   RefreshCw,
+  FileBarChart,
 } from "lucide-react";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Markdown } from "@/components/ui/markdown";
 import { useSuggestedQuestions } from "@/hooks/use-suggested-questions";
+import { useReport } from "@/hooks/use-report";
+import type { ReportThreadMessage } from "@/lib/types";
 
 // ── Visualization picker options ─────────────────────────────────────────────
 
@@ -78,7 +81,7 @@ type VizType = (typeof VIZ_OPTIONS)[number]["key"];
 export function AnalyticsChat() {
   const { thread, generationStage } = useTambo();
   const { value, setValue, submit } = useTamboThreadInput();
-  const { activeDataSourceId } = useAppContext();
+  const { activeDataSourceId, setActiveView } = useAppContext();
   const { pinItem, unpinByFingerprint, isItemPinned } = useDashboard();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -142,6 +145,41 @@ export function AnalyticsChat() {
     regenerating,
   } = useSuggestedQuestions({ dataSourceId: activeDataSourceId });
 
+  const { generateReport, generating: reportGenerating } = useReport();
+
+  const hasMessages = (thread?.messages?.length ?? 0) > 0;
+
+  const handleGenerateReport = useCallback(async () => {
+    if (!thread?.messages || thread.messages.length === 0) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mapped: ReportThreadMessage[] = thread.messages.map((m: any) => {
+      const text =
+        m.content
+          ?.filter((c: { type: string; text?: string }) => c.type === "text")
+          .map((c: { type: string; text?: string }) => c.text)
+          .join("") ?? "";
+      return {
+        role: m.role as "user" | "assistant",
+        text,
+        componentName: m.component?.componentName,
+        componentProps: m.component?.props,
+      };
+    });
+
+    const report = await generateReport(
+      mapped,
+      activeDataSourceId ?? undefined,
+      thread.id ?? undefined
+    );
+
+    if (report) {
+      // Store report in sessionStorage so ReportView can pick it up
+      sessionStorage.setItem("tambo-lens-report", JSON.stringify(report));
+      setActiveView("report");
+    }
+  }, [thread, generateReport, activeDataSourceId, setActiveView]);
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
@@ -155,7 +193,24 @@ export function AnalyticsChat() {
             </Badge>
           )}
         </div>
-        {isGenerating && (
+        <div className="flex items-center gap-2">
+          {hasMessages && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={handleGenerateReport}
+              disabled={reportGenerating}
+            >
+              {reportGenerating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FileBarChart className="h-3.5 w-3.5" />
+              )}
+              {reportGenerating ? "Generating…" : "Generate Report"}
+            </Button>
+          )}
+          {isGenerating && (
           <Badge variant="secondary" className="text-xs animate-pulse">
             <Loader2 className="h-3 w-3 mr-1 animate-spin" />
             {generationStage === "CHOOSING_COMPONENT"
@@ -169,6 +224,7 @@ export function AnalyticsChat() {
                     : "Processing..."}
           </Badge>
         )}
+        </div>
       </div>
 
       {/* Messages — native scrollable div (not Radix ScrollArea) for reliable flex layout */}

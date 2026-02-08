@@ -5,7 +5,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 interface AppContextValue {
   activeDataSourceId: string | null;
   setActiveDataSourceId: (id: string | null) => void;
-  activeView: "chat" | "sources" | "schema" | "permissions" | "dashboards";
+  activeView: "chat" | "sources" | "schema" | "permissions" | "dashboards" | "report";
   setActiveView: (view: AppContextValue["activeView"]) => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
