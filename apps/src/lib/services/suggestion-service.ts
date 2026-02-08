@@ -154,6 +154,12 @@ function generateHeuristicQuestions(
     return true;
   });
 
+  // Shuffle valid candidates to provide variety on regeneration
+  for (let i = unique.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unique[i], unique[j]] = [unique[j], unique[i]];
+  }
+
   return unique.slice(0, MAX_QUESTIONS);
 }
 
@@ -166,8 +172,16 @@ interface LLMQuestion {
 }
 
 async function generateLLMQuestions(
-  schemaSummary: string
+  schemaSummary: string,
+  excludeQuestions: string[] = []
 ): Promise<LLMQuestion[]> {
+  const exclusions =
+    excludeQuestions.length > 0
+      ? `\nAvoid these specific questions as they were previously suggested:\n${excludeQuestions
+          .map((q) => `- "${q}"`)
+          .join("\n")}\n`
+      : "";
+
   const prompt = `You are a business intelligence analyst. Given the following database schema, generate exactly 8 insightful analytical questions that a user would want to ask about this data.
 
 Make questions:
@@ -175,7 +189,7 @@ Make questions:
 - Cover a variety of categories: rankings, trends, comparisons, summaries, anomalies
 - Actionable and concise (under 60 characters each if possible)
 - Natural language a non-technical user would use
-
+${exclusions}
 Database schema:
 ${schemaSummary}
 
@@ -252,8 +266,12 @@ export async function generateSuggestedQuestions(
   let questions: { question: string; category: string; icon: string }[];
 
   if (LLM_ENABLED) {
+    // Fetch existing lines to ensure variety
+    const existing = await getSuggestedQuestions(dataSourceId);
+    const excludeList = existing.map((e) => e.question);
+
     const summary = buildSchemaSummary(schema, tablesToUse);
-    const llmQuestions = await generateLLMQuestions(summary);
+    const llmQuestions = await generateLLMQuestions(summary, excludeList);
     if (llmQuestions.length >= 3) {
       questions = llmQuestions;
     } else {
