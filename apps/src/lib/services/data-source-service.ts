@@ -31,7 +31,8 @@ const DS_COLUMNS = `
 // ──── Data Source CRUD ───────────────────────────────────────────────────────
 
 export async function createDataSource(
-  input: CreateDataSourceInput
+  input: CreateDataSourceInput,
+  userId?: string
 ): Promise<DataSourceSafe> {
   // If a connection string is provided, parse it to extract individual fields
   let { host, port, database, username, password, ssl } = input;
@@ -48,8 +49,8 @@ export async function createDataSource(
   const encryptedPassword = encrypt(password);
 
   const row = await queryOne<DataSource>(
-    `INSERT INTO data_sources (name, type, host, port, database_name, username, encrypted_password, ssl, status, read_only)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'disconnected', true)
+    `INSERT INTO data_sources (name, type, host, port, database_name, username, encrypted_password, ssl, status, read_only, user_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'disconnected', true, $9)
      RETURNING ${DS_COLUMNS}`,
     [
       input.name,
@@ -60,6 +61,7 @@ export async function createDataSource(
       username,
       encryptedPassword,
       ssl ?? false,
+      userId ?? null,
     ]
   );
 
@@ -67,7 +69,14 @@ export async function createDataSource(
   return toSafe(row);
 }
 
-export async function getDataSources(): Promise<DataSourceSafe[]> {
+export async function getDataSources(userId?: string): Promise<DataSourceSafe[]> {
+  if (userId) {
+    const rows = await query<DataSource>(
+      `SELECT ${DS_COLUMNS} FROM data_sources WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId]
+    );
+    return rows.map(toSafe);
+  }
   const rows = await query<DataSource>(
     `SELECT ${DS_COLUMNS} FROM data_sources ORDER BY created_at DESC`
   );
@@ -219,25 +228,32 @@ export async function saveDashboard(dashboard: {
   description?: string;
   threadId?: string;
   components: unknown[];
-}): Promise<{ id: string }> {
+}, userId?: string): Promise<{ id: string }> {
   const row = await queryOne<{ id: string }>(
-    `INSERT INTO dashboards (name, description, thread_id, components)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO dashboards (name, description, thread_id, components, user_id)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING id`,
     [
       dashboard.name,
       dashboard.description ?? null,
       dashboard.threadId ?? null,
       JSON.stringify(dashboard.components),
+      userId ?? null,
     ]
   );
   if (!row) throw new Error("Failed to save dashboard");
   return row;
 }
 
-export async function getDashboards(): Promise<
+export async function getDashboards(userId?: string): Promise<
   { id: string; name: string; description: string; createdAt: string }[]
 > {
+  if (userId) {
+    return query(
+      `SELECT id, name, description, created_at as "createdAt" FROM dashboards WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId]
+    );
+  }
   return query(
     `SELECT id, name, description, created_at as "createdAt" FROM dashboards ORDER BY created_at DESC`
   );
@@ -284,10 +300,11 @@ export async function logQuery(entry: {
   rowCount?: number;
   status: "success" | "error" | "rejected";
   errorMessage?: string;
+  userId?: string;
 }): Promise<void> {
   await query(
-    `INSERT INTO query_audit_log (data_source_id, query_text, query_params, execution_time_ms, row_count, status, error_message)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    `INSERT INTO query_audit_log (data_source_id, query_text, query_params, execution_time_ms, row_count, status, error_message, user_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       entry.dataSourceId,
       entry.queryText,
@@ -296,6 +313,7 @@ export async function logQuery(entry: {
       entry.rowCount ?? null,
       entry.status,
       entry.errorMessage ?? null,
+      entry.userId ?? null,
     ]
   );
 }

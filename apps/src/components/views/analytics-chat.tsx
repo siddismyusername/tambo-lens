@@ -181,7 +181,8 @@ export function AnalyticsChat() {
             />
           )}
 
-          {thread?.messages?.map((message) => (
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {thread?.messages?.map((message: any) => (
             <div key={message.id}>
               {message.role === "user" && (
                 <div className="flex items-start gap-3">
@@ -191,8 +192,8 @@ export function AnalyticsChat() {
                   <div className="flex-1 pt-1">
                     <p className="text-sm whitespace-pre-wrap">
                       {message.content
-                        ?.filter((c) => c.type === "text")
-                        .map((c) => c.text)
+                        ?.filter((c: { type: string; text?: string }) => c.type === "text")
+                        .map((c: { type: string; text?: string }) => c.text)
                         .join("")}
                     </p>
                   </div>
@@ -207,8 +208,8 @@ export function AnalyticsChat() {
                   <div className="flex-1 space-y-3 pt-1 min-w-0">
                     {/* Text content rendered as Markdown */}
                     {message.content
-                      ?.filter((c) => c.type === "text" && c.text)
-                      .map((c, i) => (
+                      ?.filter((c: { type: string; text?: string }) => c.type === "text" && c.text)
+                      .map((c: { type: string; text?: string }, i: number) => (
                         <Markdown key={i} content={c.text ?? ""} />
                       ))}
 

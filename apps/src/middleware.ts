@@ -1,0 +1,36 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Allow auth-related routes
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
+  // Allow the init endpoint (needed for DB setup)
+  if (pathname === "/api/init") {
+    return NextResponse.next();
+  }
+
+  // Protect all other API routes — return 401 if not authenticated
+  if (pathname.startsWith("/api/")) {
+    const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    return NextResponse.next();
+  }
+
+  // For all other routes (pages), let them through — the client handles auth gating
+  return NextResponse.next();
+}
+
+export const config = {
+  // Match all routes except static files and Next.js internals
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};

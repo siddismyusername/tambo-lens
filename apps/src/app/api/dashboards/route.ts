@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { saveDashboard, getDashboards, getDashboard, updateDashboard } from "@/lib/services/data-source-service";
+import { getCurrentUserId } from "@/lib/auth";
 import type { ApiResponse } from "@/lib/types";
 
 export async function GET(
@@ -20,7 +21,8 @@ export async function GET(
       return NextResponse.json({ success: true, data: dashboard });
     }
 
-    const dashboards = await getDashboards();
+    const userId = await getCurrentUserId();
+    const dashboards = await getDashboards(userId ?? undefined);
     return NextResponse.json({ success: true, data: dashboards });
   } catch (err) {
     return NextResponse.json(
@@ -34,8 +36,9 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<ApiResponse<{ id: string }>>> {
   try {
+    const userId = await getCurrentUserId();
     const body = await req.json();
-    const result = await saveDashboard(body);
+    const result = await saveDashboard(body, userId ?? undefined);
     return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (err) {
     return NextResponse.json(

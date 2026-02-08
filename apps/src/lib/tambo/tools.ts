@@ -32,7 +32,7 @@ export const runSelectQueryTool = defineTool({
     executionTimeMs: z.number().describe("Query execution time in milliseconds"),
     error: z.string().optional().describe("Error message if the query failed"),
   }),
-  tool: async ({ dataSourceId, query }) => {
+  tool: async ({ dataSourceId, query }: { dataSourceId: string; query: string }) => {
     try {
       const response = await fetch("/api/query", {
         method: "POST",
@@ -106,7 +106,7 @@ export const describeTableTool = defineTool({
     rowCount: z.number().optional(),
     error: z.string().optional(),
   }),
-  tool: async ({ dataSourceId, tableName }) => {
+  tool: async ({ dataSourceId, tableName }: { dataSourceId: string; tableName: string }) => {
     try {
       const response = await fetch(`/api/data-sources/${dataSourceId}/schema`);
       const result = await response.json();
@@ -182,7 +182,7 @@ export const listTablesTool = defineTool({
     ),
     error: z.string().optional(),
   }),
-  tool: async ({ dataSourceId }) => {
+  tool: async ({ dataSourceId }: { dataSourceId: string }) => {
     try {
       const response = await fetch(`/api/data-sources/${dataSourceId}/schema`);
       const result = await response.json();

@@ -10,11 +10,13 @@ import {
   introspectPostgresSchema,
 } from "@/lib/connectors/postgres";
 import { getDataSource, cacheSchema } from "@/lib/services/data-source-service";
+import { getCurrentUserId } from "@/lib/auth";
 import type { ApiResponse, DataSourceSafe } from "@/lib/types";
 
 export async function GET(): Promise<NextResponse<ApiResponse<DataSourceSafe[]>>> {
   try {
-    const sources = await getDataSources();
+    const userId = await getCurrentUserId();
+    const sources = await getDataSources(userId ?? undefined);
     return NextResponse.json({ success: true, data: sources });
   } catch (err) {
     return NextResponse.json(
@@ -31,6 +33,7 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<ApiResponse<DataSourceSafe>>> {
   try {
+    const userId = await getCurrentUserId();
     const body = await req.json();
     const parsed = createDataSourceSchema.safeParse(body);
 
@@ -42,7 +45,7 @@ export async function POST(
     }
 
     // Create the data source
-    const dataSource = await createDataSource(parsed.data);
+    const dataSource = await createDataSource(parsed.data, userId ?? undefined);
 
     // Test connectivity
     const fullDs = await getDataSource(dataSource.id);

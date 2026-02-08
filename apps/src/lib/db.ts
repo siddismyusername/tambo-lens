@@ -52,6 +52,18 @@ export async function queryOne<T = Record<string, unknown>>(
 export async function initializeDatabase(): Promise<void> {
   const client = await getPool().connect();
   try {
+    // ── Users table (must come first — referenced by FKs) ──
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        is_demo BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS data_sources (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -65,6 +77,7 @@ export async function initializeDatabase(): Promise<void> {
         ssl BOOLEAN DEFAULT false,
         status VARCHAR(50) DEFAULT 'disconnected',
         read_only BOOLEAN DEFAULT true,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -95,6 +108,7 @@ export async function initializeDatabase(): Promise<void> {
         description TEXT,
         thread_id VARCHAR(500),
         components JSONB DEFAULT '[]',
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -102,6 +116,7 @@ export async function initializeDatabase(): Promise<void> {
       CREATE TABLE IF NOT EXISTS query_audit_log (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         data_source_id UUID REFERENCES data_sources(id),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
         query_text TEXT NOT NULL,
         query_params JSONB,
         execution_time_ms INTEGER,
@@ -110,6 +125,38 @@ export async function initializeDatabase(): Promise<void> {
         error_message TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+    `);
+
+    // ── Add user_id columns to existing tables (safe migration for existing DBs) ──
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'data_sources' AND column_name = 'user_id'
+        ) THEN
+          ALTER TABLE data_sources ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+        END IF;
+      END $$;
+    `);
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'dashboards' AND column_name = 'user_id'
+        ) THEN
+          ALTER TABLE dashboards ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+        END IF;
+      END $$;
+    `);
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'query_audit_log' AND column_name = 'user_id'
+        ) THEN
+          ALTER TABLE query_audit_log ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+        END IF;
+      END $$;
     `);
   } finally {
     client.release();

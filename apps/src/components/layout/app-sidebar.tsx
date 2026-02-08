@@ -2,6 +2,7 @@
 
 import { useAppContext } from "@/components/providers/app-context";
 import { useDataSources } from "@/hooks/use-data-sources";
+import { useSession, signOut } from "next-auth/react";
 import { ChatHistoryPanel } from "@/components/views/chat-history-panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,8 @@ import {
   Wifi,
   WifiOff,
   AlertCircle,
+  LogOut,
+  User,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -31,6 +34,7 @@ export function AppSidebar() {
   } = useAppContext();
 
   const { dataSources, loading } = useDataSources();
+  const { data: session } = useSession();
 
   const navItems = [
     { key: "chat" as const, label: "Analytics Chat", icon: MessageSquare },
@@ -77,6 +81,18 @@ export function AppSidebar() {
         ))}
         <Separator />
         <ChatHistoryPanel collapsed />
+        <div className="mt-auto">
+          <Separator />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 mt-2"
+            onClick={() => signOut()}
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     );
   }
@@ -180,6 +196,42 @@ export function AppSidebar() {
           </div>
         </div>
       </div>
+
+      {/* User Footer */}
+      {session?.user && (
+        <>
+          <Separator />
+          <div className="p-3 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <User className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium truncate">
+                  {session.user.name}
+                </p>
+                {(session.user as { isDemo?: boolean }).isDemo && (
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 shrink-0">
+                    Demo
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate">
+                {session.user.email}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0"
+              onClick={() => signOut()}
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
