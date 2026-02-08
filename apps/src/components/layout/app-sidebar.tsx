@@ -21,6 +21,13 @@ import {
   AlertCircle,
   LogOut,
   User,
+  Sparkles,
+  ShieldCheck,
+  BellRing,
+  FileText,
+  Lock,
+  SearchCode,
+  BarChart3,
 } from "lucide-react";
 import { AlertsFeed, AlertsFeedCollapsed } from "@/components/views/alerts-feed";
 
@@ -43,6 +50,16 @@ export function AppSidebar() {
     { key: "schema" as const, label: "Schema Browser", icon: TableProperties },
     { key: "permissions" as const, label: "Permissions", icon: Shield },
     { key: "dashboards" as const, label: "Dashboards", icon: LayoutDashboard },
+  ];
+
+  const featureItems = [
+    { label: "Generative UI", icon: Sparkles, badge: "7 components" },
+    { label: "Query Guardrails", icon: ShieldCheck, badge: "Active" },
+    { label: "Anomaly Detection", icon: BellRing, badge: null },
+    { label: "Report Builder", icon: FileText, badge: null },
+    { label: "Encrypted Vault", icon: Lock, badge: "AES-256" },
+    { label: "Schema Discovery", icon: SearchCode, badge: null },
+    { label: "Charts & Visuals", icon: BarChart3, badge: null },
   ];
 
   const statusIcon = (status: string) => {
@@ -79,6 +96,16 @@ export function AppSidebar() {
           >
             <item.icon className="h-4 w-4" />
           </Button>
+        ))}
+        <Separator />
+        {featureItems.map((item) => (
+          <div
+            key={item.label}
+            className="h-8 w-8 flex items-center justify-center"
+            title={item.label}
+          >
+            <item.icon className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
         ))}
         <Separator />
         <AlertsFeed />
@@ -137,6 +164,31 @@ export function AppSidebar() {
           </Button>
         ))}
       </nav>
+
+      <Separator />
+
+      {/* Features */}
+      <div className="p-3">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Features
+        </span>
+        <div className="mt-2 space-y-0.5">
+          {featureItems.map((item) => (
+            <div
+              key={item.label}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground"
+            >
+              <item.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="flex-1 truncate text-xs">{item.label}</span>
+              {item.badge && (
+                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
+                  {item.badge}
+                </Badge>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
 
       <Separator />
 
