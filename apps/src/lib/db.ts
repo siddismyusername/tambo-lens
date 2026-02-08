@@ -128,6 +128,41 @@ export async function initializeDatabase(): Promise<void> {
     `);
 
     // ── Add user_id columns to existing tables (safe migration for existing DBs) ──
+    // ── Anomaly Detection tables ──
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS anomaly_scans (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        data_source_id UUID NOT NULL REFERENCES data_sources(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        status VARCHAR(50) DEFAULT 'pending',
+        tables_scanned INTEGER DEFAULT 0,
+        queries_run INTEGER DEFAULT 0,
+        alerts_found INTEGER DEFAULT 0,
+        error_message TEXT,
+        started_at TIMESTAMPTZ DEFAULT NOW(),
+        completed_at TIMESTAMPTZ
+      );
+
+      CREATE TABLE IF NOT EXISTS anomaly_alerts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        scan_id UUID REFERENCES anomaly_scans(id) ON DELETE CASCADE,
+        data_source_id UUID NOT NULL REFERENCES data_sources(id) ON DELETE CASCADE,
+        severity VARCHAR(20) NOT NULL CHECK (severity IN ('critical', 'warning', 'info')),
+        metric_name VARCHAR(500) NOT NULL,
+        description TEXT NOT NULL,
+        detail TEXT,
+        table_name VARCHAR(500),
+        column_name VARCHAR(500),
+        current_value DOUBLE PRECISION,
+        previous_value DOUBLE PRECISION,
+        change_percent DOUBLE PRECISION,
+        query_used TEXT,
+        seen BOOLEAN DEFAULT false,
+        dismissed BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     await client.query(`
       DO $$ BEGIN
         IF NOT EXISTS (

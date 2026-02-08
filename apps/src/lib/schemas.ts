@@ -156,3 +156,19 @@ export const metricGridPropsSchema = z.object({
   title: safeStr().describe("Grid title"),
   metrics: z.preprocess((v) => (v == null ? [] : v), z.array(kpiCardPropsSchema).default([])).describe("Array of KPI metrics to display"),
 });
+
+// ──── Anomaly Card Schema ────────────────────────────────────────────────────
+
+export const anomalyCardPropsSchema = z.object({
+  severity: z.preprocess(
+    (v) => (v == null ? "info" : v),
+    z.enum(["critical", "warning", "info"]).default("info")
+  ).describe("Anomaly severity: critical, warning, or info"),
+  metricName: safeStr().describe("Name of the affected metric, e.g. 'Weekly Revenue'"),
+  description: safeStr().describe("Human-readable description of the anomaly"),
+  detail: z.string().nullable().optional().describe("Additional detail or context about the anomaly"),
+  changePercent: z.number().nullable().optional().describe("Percentage change that triggered the anomaly"),
+  currentValue: z.string().nullable().optional().describe("Current value of the metric"),
+  previousValue: z.string().nullable().optional().describe("Previous/expected value of the metric"),
+  tableName: z.string().nullable().optional().describe("Source table name"),
+});

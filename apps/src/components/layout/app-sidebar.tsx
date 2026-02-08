@@ -22,6 +22,7 @@ import {
   LogOut,
   User,
 } from "lucide-react";
+import { AlertsFeed, AlertsFeedCollapsed } from "@/components/views/alerts-feed";
 
 export function AppSidebar() {
   const {
@@ -80,6 +81,8 @@ export function AppSidebar() {
           </Button>
         ))}
         <Separator />
+        <AlertsFeed />
+        <Separator />
         <ChatHistoryPanel collapsed />
         <div className="mt-auto">
           <Separator />
@@ -105,14 +108,17 @@ export function AppSidebar() {
           <Database className="h-5 w-5 text-primary" />
           <h1 className="font-semibold text-base">Tambo Lens</h1>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => setSidebarOpen(false)}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <AlertsFeed />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <Separator />

@@ -210,10 +210,79 @@ export const listTablesTool = defineTool({
 });
 
 /**
+ * Tambo tool: Fetch detected anomaly alerts for a data source.
+ */
+export const getAnomaliesTool = defineTool({
+  name: "get_anomalies",
+  description:
+    "Fetch proactive anomaly alerts detected by the system for a data source. Returns recent anomalies including metric changes, severity levels, and descriptions. Use this when the user asks about anomalies, unusual patterns, or what changed recently.",
+  inputSchema: z.object({
+    dataSourceId: z
+      .string()
+      .describe("The UUID of the data source to fetch anomalies for"),
+  }),
+  outputSchema: z.object({
+    alerts: z.array(
+      z.object({
+        severity: z.string(),
+        metricName: z.string(),
+        description: z.string(),
+        detail: z.string().optional(),
+        changePercent: z.number().optional(),
+        currentValue: z.string().optional(),
+        previousValue: z.string().optional(),
+        tableName: z.string().optional(),
+      })
+    ),
+    error: z.string().optional(),
+  }),
+  tool: async ({ dataSourceId }: { dataSourceId: string }) => {
+    try {
+      const response = await fetch(`/api/anomalies?dataSourceId=${dataSourceId}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        return { alerts: [], error: result.error || "Failed to fetch anomalies" };
+      }
+
+      return {
+        alerts: (result.data ?? []).map(
+          (a: {
+            severity: string;
+            metricName: string;
+            description: string;
+            detail?: string;
+            changePercent?: number;
+            currentValue?: number;
+            previousValue?: number;
+            tableName?: string;
+          }) => ({
+            severity: a.severity,
+            metricName: a.metricName,
+            description: a.description,
+            detail: a.detail,
+            changePercent: a.changePercent,
+            currentValue: a.currentValue != null ? String(a.currentValue) : undefined,
+            previousValue: a.previousValue != null ? String(a.previousValue) : undefined,
+            tableName: a.tableName,
+          })
+        ),
+      };
+    } catch (err) {
+      return {
+        alerts: [],
+        error: err instanceof Error ? err.message : "Network error",
+      };
+    }
+  },
+});
+
+/**
  * All Tambo tools for Tambo Lens
  */
 export const tamboLensTools = [
   runSelectQueryTool,
   describeTableTool,
   listTablesTool,
+  getAnomaliesTool,
 ];
