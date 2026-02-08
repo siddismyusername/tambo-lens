@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { initializeDatabase } from "@/lib/db";
 import { ensureDemoUser, associateOrphanedDataWithDemoUser } from "@/lib/services/auth-service";
+import { ensureDemoDataSource } from "@/lib/services/data-source-service";
 import type { ApiResponse } from "@/lib/types";
 
 /**
@@ -11,8 +12,10 @@ export async function POST(): Promise<NextResponse<ApiResponse<{ initialized: bo
   try {
     await initializeDatabase();
     // Seed the demo user and assign any orphaned data
-    await ensureDemoUser();
+    const demoUser = await ensureDemoUser();
     await associateOrphanedDataWithDemoUser();
+    // Provision a demo data source so the demo user has something to query
+    await ensureDemoDataSource(demoUser.id);
     return NextResponse.json({
       success: true,
       data: { initialized: true },

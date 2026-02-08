@@ -75,6 +75,15 @@ export function AuthView() {
     setDemoLoading(true);
 
     try {
+      // Ensure the database, demo user, and demo data source are provisioned
+      const initRes = await fetch("/api/init", { method: "POST" });
+      const initData = await initRes.json();
+      if (!initData.success) {
+        setError(initData.error || "Failed to initialize demo environment.");
+        setDemoLoading(false);
+        return;
+      }
+
       const result = await signIn("credentials", {
         email: "demo@tambolens.com",
         password: "demo1234",

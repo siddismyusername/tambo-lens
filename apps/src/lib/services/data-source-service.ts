@@ -1,6 +1,10 @@
 import { query, queryOne, getPool } from "../db";
 import { encrypt } from "../encryption";
-import { parseConnectionString } from "../connectors/postgres";
+import {
+  parseConnectionString,
+  testConnection,
+  introspectPostgresSchema,
+} from "../connectors/postgres";
 import type {
   DataSource,
   DataSourceSafe,
@@ -316,6 +320,67 @@ export async function logQuery(entry: {
       entry.userId ?? null,
     ]
   );
+}
+
+// ──── Demo Data Source Provisioning ──────────────────────────────────────────
+
+/**
+ * Ensure the demo user has at least one data source.
+ * Uses DEMO_DATABASE_URL if set, otherwise falls back to DATABASE_URL.
+ * Returns the existing or newly-created data source, or null on failure.
+ */
+export async function ensureDemoDataSource(
+  userId: string
+): Promise<DataSourceSafe | null> {
+  // Already has a data source? Return the first one.
+  const existing = await getDataSources(userId);
+  if (existing.length > 0) return existing[0];
+
+  const demoUrl = process.env.DEMO_DATABASE_URL || process.env.DATABASE_URL;
+  if (!demoUrl) return null;
+
+  try {
+    const parsed = parseConnectionString(demoUrl);
+
+    const ds = await createDataSource(
+      {
+        name: "Demo Database",
+        type: "postgresql",
+        host: parsed.host,
+        port: parsed.port,
+        database: parsed.database,
+        username: parsed.username,
+        password: parsed.password,
+        ssl: parsed.ssl,
+      },
+      userId
+    );
+
+    // Test connectivity and update status
+    const fullDs = await getDataSource(ds.id);
+    if (fullDs) {
+      const result = await testConnection(fullDs);
+      if (result.success) {
+        await updateDataSourceStatus(ds.id, "connected");
+        ds.status = "connected";
+
+        // Auto-introspect schema (non-blocking failure)
+        try {
+          const schema = await introspectPostgresSchema(fullDs);
+          await cacheSchema(ds.id, schema);
+        } catch {
+          // schema introspection failure is non-blocking
+        }
+      } else {
+        await updateDataSourceStatus(ds.id, "error");
+        ds.status = "error";
+      }
+    }
+
+    return ds;
+  } catch {
+    return null;
+  }
 }
 
 // ──── Helpers ────────────────────────────────────────────────────────────────
