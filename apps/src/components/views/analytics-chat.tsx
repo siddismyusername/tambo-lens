@@ -272,21 +272,41 @@ export function AnalyticsChat() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapped: ReportThreadMessage[] = thread.messages.map((m: any) => {
-      const text =
+      const textParts: string[] =
         m.content
           ?.filter((c: { type: string; text?: string }) => c.type === "text")
-          .map((c: { type: string; text?: string }) => c.text)
-          .join("") ?? "";
+          .map((c: { type: string; text?: string }) => c.text ?? "") ?? [];
+
+      // Filter out raw JSON tool-result blobs (schema dumps, query results, etc.)
+      const cleanText = textParts
+        .filter((t: string) => {
+          const trimmed = t.trim();
+          // Skip text that is just a JSON object/array (tool call results)
+          if (
+            (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+            (trimmed.startsWith("[") && trimmed.endsWith("]"))
+          ) {
+            try { JSON.parse(trimmed); return false; } catch { return true; }
+          }
+          return true;
+        })
+        .join("");
+
       return {
         role: m.role as "user" | "assistant",
-        text,
+        text: cleanText,
         componentName: m.component?.componentName,
         componentProps: m.component?.props,
       };
     });
 
+    // Remove messages that ended up with no text and no component
+    const filtered = mapped.filter(
+      (m) => m.text.trim() || m.componentName
+    );
+
     const report = await generateReport(
-      mapped,
+      filtered,
       activeDataSourceId ?? undefined,
       thread.id ?? undefined
     );

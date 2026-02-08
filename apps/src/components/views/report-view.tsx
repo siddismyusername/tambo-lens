@@ -140,7 +140,7 @@ export function ReportView({ report, onBack }: ReportViewProps) {
           </div>
 
           {/* Markdown content */}
-          <article className="report-article prose-report">
+          <article className="report-article prose-report [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:border-b [&_h2]:pb-2 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:mt-5 [&_h3]:mb-2 [&_p]:text-sm [&_p]:leading-relaxed [&_blockquote]:bg-muted/50 [&_blockquote]:rounded-md [&_blockquote]:px-4 [&_blockquote]:py-2">
             <Markdown content={report.markdownContent} />
           </article>
 

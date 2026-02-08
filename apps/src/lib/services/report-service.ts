@@ -60,6 +60,20 @@ function describeComponent(
 }
 
 /**
+ * Check if a string is raw JSON (tool-result blob).
+ */
+function isRawJson(text: string): boolean {
+  const trimmed = text.trim();
+  if (
+    (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+    (trimmed.startsWith("[") && trimmed.endsWith("]"))
+  ) {
+    try { JSON.parse(trimmed); return true; } catch { return false; }
+  }
+  return false;
+}
+
+/**
  * Flatten the Tambo thread messages into a compact text transcript the LLM
  * can turn into a narrative report.
  */
@@ -70,9 +84,16 @@ function buildTranscript(messages: ReportThreadMessage[]): string {
     if (msg.role === "user") {
       lines.push(`USER: ${msg.text}`);
     } else {
-      // Assistant text
+      // Assistant text — filter out raw JSON tool output lines
       if (msg.text) {
-        lines.push(`ASSISTANT: ${msg.text}`);
+        const cleaned = msg.text
+          .split("\n")
+          .filter((line) => !isRawJson(line))
+          .join("\n")
+          .trim();
+        if (cleaned) {
+          lines.push(`ASSISTANT: ${cleaned}`);
+        }
       }
       // Attached visualisation
       if (msg.componentName && msg.componentProps) {
@@ -248,8 +269,14 @@ export async function getReportsByUser(userId: string): Promise<Report[]> {
 function buildFallbackReport(messages: ReportThreadMessage[]): string {
   const lines: string[] = ["# Analytics Report\n"];
   lines.push("## Executive Summary\n");
+
+  // Count user questions
+  const userQuestions = messages.filter((m) => m.role === "user");
+  const visualisations = messages.filter((m) => m.componentName);
   lines.push(
-    `This report summarises an analytics session with **${messages.length}** messages.\n`
+    `This report summarises an analytics session covering **${userQuestions.length}** question${userQuestions.length !== 1 ? "s" : ""}` +
+    (visualisations.length > 0 ? `, with **${visualisations.length}** visualisation${visualisations.length !== 1 ? "s" : ""}` : "") +
+    " generated.\n"
   );
 
   lines.push("## Key Findings\n");
@@ -261,11 +288,19 @@ function buildFallbackReport(messages: ReportThreadMessage[]): string {
       sectionIdx++;
     } else {
       if (msg.text) {
-        lines.push(msg.text + "\n");
+        // Skip raw JSON blobs from tool results
+        const cleaned = msg.text
+          .split("\n")
+          .filter((line) => !isRawJson(line))
+          .join("\n")
+          .trim();
+        if (cleaned) {
+          lines.push(cleaned + "\n");
+        }
       }
       if (msg.componentName && msg.componentProps) {
         lines.push(
-          `> ${describeComponent(msg.componentName, msg.componentProps)}\n`
+          `> **Visualisation**: ${describeComponent(msg.componentName, msg.componentProps)}\n`
         );
       }
     }
@@ -273,7 +308,7 @@ function buildFallbackReport(messages: ReportThreadMessage[]): string {
 
   lines.push("## Data Sources & Methodology\n");
   lines.push(
-    "Data was queried through Tambo Lens using read-only SELECT queries against the connected database.\n"
+    "Data was queried through Tambo Lens using safe, read-only SELECT queries against the connected database.\n"
   );
 
   return lines.join("\n");
