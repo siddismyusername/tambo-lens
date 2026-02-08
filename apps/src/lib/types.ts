@@ -242,3 +242,15 @@ export interface AnomalyCardProps {
   previousValue?: string;
   tableName?: string;
 }
+
+// ──── Suggested Questions ────────────────────────────────────────────────────
+
+export interface SuggestedQuestion {
+  id: string;
+  dataSourceId: string;
+  question: string;
+  category?: string;
+  icon?: string;
+  sortOrder: number;
+  createdAt: string;
+}
