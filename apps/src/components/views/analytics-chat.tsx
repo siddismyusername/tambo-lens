@@ -24,9 +24,17 @@ import {
   Gauge,
   Pin,
   PinOff,
+  Trophy,
+  TrendingUp,
+  Hash,
+  Calendar,
+  AlertTriangle as AlertTriangleIcon,
+  Users,
+  RefreshCw,
 } from "lucide-react";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Markdown } from "@/components/ui/markdown";
+import { useSuggestedQuestions } from "@/hooks/use-suggested-questions";
 
 // ── Visualization picker options ─────────────────────────────────────────────
 
@@ -127,13 +135,12 @@ export function AnalyticsChat() {
     }
   };
 
-  const suggestions = [
-    "Show me total revenue by month",
-    "What are our top 10 customers?",
-    "Display user signup trends",
-    "Give me a KPI dashboard overview",
-    "Compare sales across regions",
-  ];
+  const {
+    questions: suggestedQuestions,
+    loading: suggestionsLoading,
+    regenerate: regenerateSuggestions,
+    regenerating,
+  } = useSuggestedQuestions({ dataSourceId: activeDataSourceId });
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -172,7 +179,10 @@ export function AnalyticsChat() {
         <div className="py-6 space-y-6 max-w-4xl mx-auto">
           {(!thread?.messages || thread.messages.length === 0) && (
             <EmptyState
-              suggestions={suggestions}
+              questions={suggestedQuestions}
+              loading={suggestionsLoading}
+              regenerating={regenerating}
+              onRegenerate={regenerateSuggestions}
               onSuggestionClick={(s) => {
                 setShowVizPicker(true);
                 setPendingQuery(s);
@@ -357,12 +367,34 @@ export function AnalyticsChat() {
   );
 }
 
+// ── Icon mapping for suggested question categories ───────────────────────────
+
+const CATEGORY_ICONS: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
+  trophy: Trophy,
+  "trending-up": TrendingUp,
+  "bar-chart": BarChart3,
+  hash: Hash,
+  "pie-chart": PieChartIcon,
+  calendar: Calendar,
+  "alert-triangle": AlertTriangleIcon,
+  users: Users,
+};
+
 function EmptyState({
-  suggestions,
+  questions,
+  loading,
+  regenerating,
+  onRegenerate,
   onSuggestionClick,
   hasDataSource,
 }: {
-  suggestions: string[];
+  questions: { question: string; icon?: string; category?: string }[];
+  loading: boolean;
+  regenerating: boolean;
+  onRegenerate: () => void;
   onSuggestionClick: (s: string) => void;
   hasDataSource: boolean;
 }) {
@@ -375,25 +407,66 @@ function EmptyState({
         <h3 className="text-lg font-semibold">Welcome to Tambo Lens</h3>
         <p className="text-sm text-muted-foreground max-w-md">
           {hasDataSource
-            ? "Ask questions about your data in natural language. I'll query your database and show you the results as charts, tables, and KPIs."
+            ? "Ask questions about your data in natural language. Here are some suggestions based on your schema:"
             : "Connect a data source from the sidebar to get started with analytics."}
         </p>
       </div>
       {hasDataSource && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
-          {suggestions.map((s, i) => (
-            <Card
-              key={i}
-              className="p-3 cursor-pointer hover:bg-accent transition-colors"
-              onClick={() => onSuggestionClick(s)}
-            >
-              <div className="flex items-center gap-2">
-                <RotateCcw className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-sm">{s}</span>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="p-3 animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded bg-muted" />
+                    <div className="h-4 flex-1 rounded bg-muted" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
+              {questions.map((q, i) => {
+                const IconComp =
+                  CATEGORY_ICONS[q.icon ?? ""] ?? RotateCcw;
+                return (
+                  <Card
+                    key={i}
+                    className="p-3 cursor-pointer hover:bg-accent hover:border-primary/30 transition-colors group"
+                    onClick={() => onSuggestionClick(q.question)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <IconComp className="h-3.5 w-3.5 text-primary/70 shrink-0 group-hover:text-primary transition-colors" />
+                      <span className="text-sm">{q.question}</span>
+                    </div>
+                    {q.category && (
+                      <Badge
+                        variant="outline"
+                        className="mt-1.5 text-[10px] px-1.5 py-0 h-4 capitalize text-muted-foreground"
+                      >
+                        {q.category}
+                      </Badge>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-muted-foreground"
+            onClick={onRegenerate}
+            disabled={regenerating}
+          >
+            {regenerating ? (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3 w-3 mr-1" />
+            )}
+            {regenerating ? "Generating…" : "Regenerate suggestions"}
+          </Button>
+        </>
       )}
     </div>
   );

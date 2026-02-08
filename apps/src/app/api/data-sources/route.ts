@@ -12,6 +12,7 @@ import {
 import { getDataSource, cacheSchema } from "@/lib/services/data-source-service";
 import { getCurrentUserId } from "@/lib/auth";
 import { runAnomalyScan } from "@/lib/services/anomaly-service";
+import { generateSuggestedQuestions } from "@/lib/services/suggestion-service";
 import type { ApiResponse, DataSourceSafe } from "@/lib/types";
 
 export async function GET(): Promise<NextResponse<ApiResponse<DataSourceSafe[]>>> {
@@ -64,6 +65,11 @@ export async function POST(
           // Trigger proactive anomaly scan (non-blocking)
           runAnomalyScan(dataSource.id, userId ?? undefined).catch(() => {
             // Anomaly scan failure is non-blocking
+          });
+
+          // Trigger smart question generation (non-blocking)
+          generateSuggestedQuestions(dataSource.id).catch(() => {
+            // Suggestion generation failure is non-blocking
           });
         } catch {
           // Schema introspection failure is non-blocking

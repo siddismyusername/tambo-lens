@@ -161,6 +161,16 @@ export async function initializeDatabase(): Promise<void> {
         dismissed BOOLEAN DEFAULT false,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS suggested_questions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        data_source_id UUID NOT NULL REFERENCES data_sources(id) ON DELETE CASCADE,
+        question TEXT NOT NULL,
+        category VARCHAR(100),
+        icon VARCHAR(50),
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
 
     await client.query(`
