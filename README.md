@@ -282,6 +282,10 @@ tambo-lens/
 MIT
 
 ---
+## Contributors
+-Siddharth
+-JAY
+-Shubham
 
 <p align="center">
   Built with <a href="https://tambo.co">Tambo AI</a> · <a href="https://nextjs.org">Next.js</a> · <a href="https://ui.shadcn.com">shadcn/ui</a>
