@@ -43,7 +43,15 @@ export function ChatHistoryPanel({ collapsed = false }: ChatHistoryPanelProps) {
 
   const threadListResult = useTamboThreadList();
   const rawThreads = threadListResult.data?.items;
-  const threads = useMemo(() => rawThreads ?? [], [rawThreads]);
+  const threads = useMemo(() => {
+    const items = rawThreads ?? [];
+    // Deduplicate by ID to prevent "same key" errors
+    const uniqueMap = new Map();
+    items.forEach((item: any) => {
+      uniqueMap.set(item.id, item);
+    });
+    return Array.from(uniqueMap.values());
+  }, [rawThreads]);
   const isLoadingThreads = threadListResult.isPending;
 
   const [restoredFromStorage, setRestoredFromStorage] = useState(false);
@@ -126,7 +134,7 @@ export function ChatHistoryPanel({ collapsed = false }: ChatHistoryPanelProps) {
 
     // Check if we have at least one assistant message (meaning the conversation has started)
     const hasAssistantMessage = thread?.messages?.some(
-      (m) => m.role === "assistant",
+      (m: any) => m.role === "assistant",
     );
     if (hasAssistantMessage) {
       prevThreadIdRef.current = currentThreadId;
