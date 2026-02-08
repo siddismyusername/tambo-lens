@@ -11,6 +11,7 @@ import {
 } from "@/lib/connectors/postgres";
 import { getDataSource, cacheSchema } from "@/lib/services/data-source-service";
 import { getCurrentUserId } from "@/lib/auth";
+import { runAnomalyScan } from "@/lib/services/anomaly-service";
 import type { ApiResponse, DataSourceSafe } from "@/lib/types";
 
 export async function GET(): Promise<NextResponse<ApiResponse<DataSourceSafe[]>>> {
@@ -59,6 +60,11 @@ export async function POST(
         try {
           const schema = await introspectPostgresSchema(fullDs);
           await cacheSchema(dataSource.id, schema);
+
+          // Trigger proactive anomaly scan (non-blocking)
+          runAnomalyScan(dataSource.id, userId ?? undefined).catch(() => {
+            // Anomaly scan failure is non-blocking
+          });
         } catch {
           // Schema introspection failure is non-blocking
         }

@@ -195,3 +195,50 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+// ──── Anomaly Detection ──────────────────────────────────────────────────────
+
+export type AnomalySeverity = "critical" | "warning" | "info";
+
+export interface AnomalyScan {
+  id: string;
+  dataSourceId: string;
+  userId?: string;
+  status: "pending" | "running" | "completed" | "failed";
+  tablesScanned: number;
+  queriesRun: number;
+  alertsFound: number;
+  errorMessage?: string;
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface AnomalyAlert {
+  id: string;
+  scanId?: string;
+  dataSourceId: string;
+  severity: AnomalySeverity;
+  metricName: string;
+  description: string;
+  detail?: string;
+  tableName?: string;
+  columnName?: string;
+  currentValue?: number;
+  previousValue?: number;
+  changePercent?: number;
+  queryUsed?: string;
+  seen: boolean;
+  dismissed: boolean;
+  createdAt: string;
+}
+
+export interface AnomalyCardProps {
+  severity?: AnomalySeverity;
+  metricName?: string;
+  description?: string;
+  detail?: string;
+  changePercent?: number;
+  currentValue?: string;
+  previousValue?: string;
+  tableName?: string;
+}

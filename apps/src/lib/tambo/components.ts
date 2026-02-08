@@ -9,6 +9,7 @@ import {
   pieChartPropsSchema,
   summaryCardPropsSchema,
   metricGridPropsSchema,
+  anomalyCardPropsSchema,
 } from "@/lib/schemas";
 import { KPICard } from "@/components/genui/kpi-card";
 import { DataTable } from "@/components/genui/data-table";
@@ -17,6 +18,7 @@ import { LineChartComponent } from "@/components/genui/line-chart";
 import { PieChartComponent } from "@/components/genui/pie-chart";
 import { SummaryCard } from "@/components/genui/summary-card";
 import { MetricGrid } from "@/components/genui/metric-grid";
+import { AnomalyCard } from "@/components/genui/anomaly-card";
 
 /**
  * All Generative UI components registered with Tambo.
@@ -73,5 +75,12 @@ export const tamboLensComponents: TamboComponent[] = [
       "Displays a grid of multiple KPI cards. Use when showing a dashboard overview of several metrics at once like total users + revenue + conversion rate + churn rate.",
     component: MetricGrid,
     propsSchema: metricGridPropsSchema,
+  },
+  {
+    name: "AnomalyCard",
+    description:
+      "Displays a detected data anomaly with severity level, metric name, percentage change, and context. Use when presenting proactive anomaly alerts, data quality issues, or significant metric deviations to the user.",
+    component: AnomalyCard,
+    propsSchema: anomalyCardPropsSchema,
   },
 ];
