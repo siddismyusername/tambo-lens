@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { initializeDatabase } from "@/lib/db";
 import { ensureDemoUser, associateOrphanedDataWithDemoUser } from "@/lib/services/auth-service";

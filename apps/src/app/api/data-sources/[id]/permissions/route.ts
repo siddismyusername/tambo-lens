@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { updatePermissionsSchema } from "@/lib/schemas";
 import {

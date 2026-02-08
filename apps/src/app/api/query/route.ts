@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { queryRequestSchema } from "@/lib/schemas";
 import { executeGuardedQuery } from "@/lib/services/query-service";
