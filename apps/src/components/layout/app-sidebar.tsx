@@ -79,39 +79,41 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 shrink-0"
           onClick={() => setSidebarOpen(true)}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
-        <Separator />
-        {navItems.map((item) => (
-          <Button
-            key={item.key}
-            variant={activeView === item.key ? "secondary" : "ghost"}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setActiveView(item.key)}
-            title={item.label}
-          >
-            <item.icon className="h-4 w-4" />
-          </Button>
-        ))}
-        <Separator />
-        {featureItems.map((item) => (
-          <div
-            key={item.label}
-            className="h-8 w-8 flex items-center justify-center"
-            title={item.label}
-          >
-            <item.icon className="h-3.5 w-3.5 text-muted-foreground" />
-          </div>
-        ))}
-        <Separator />
-        <AlertsFeed />
-        <Separator />
-        <ChatHistoryPanel collapsed />
-        <div className="mt-auto">
+        <Separator className="shrink-0" />
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center gap-2 w-full">
+          {navItems.map((item) => (
+            <Button
+              key={item.key}
+              variant={activeView === item.key ? "secondary" : "ghost"}
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => setActiveView(item.key)}
+              title={item.label}
+            >
+              <item.icon className="h-4 w-4" />
+            </Button>
+          ))}
+          <Separator className="shrink-0" />
+          {featureItems.map((item) => (
+            <div
+              key={item.label}
+              className="h-8 w-8 flex items-center justify-center shrink-0"
+              title={item.label}
+            >
+              <item.icon className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+          ))}
+          <Separator className="shrink-0" />
+          <AlertsFeed />
+          <Separator className="shrink-0" />
+          <ChatHistoryPanel collapsed />
+        </div>
+        <div className="mt-auto shrink-0">
           <Separator />
           <Button
             variant="ghost"
@@ -150,57 +152,59 @@ export function AppSidebar() {
 
       <Separator />
 
-      {/* Navigation */}
-      <nav className="p-2 space-y-1">
-        {navItems.map((item) => (
-          <Button
-            key={item.key}
-            variant={activeView === item.key ? "secondary" : "ghost"}
-            className="w-full justify-start gap-2 h-9 text-sm"
-            onClick={() => setActiveView(item.key)}
-          >
-            <item.icon className="h-4 w-4" />
-            {item.label}
-          </Button>
-        ))}
-      </nav>
-
-      <Separator />
-
-      {/* Features */}
-      <div className="p-3">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          Features
-        </span>
-        <div className="mt-2 space-y-0.5">
-          {featureItems.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground"
+      {/* Scrollable content */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* Navigation */}
+        <nav className="p-2 space-y-1">
+          {navItems.map((item) => (
+            <Button
+              key={item.key}
+              variant={activeView === item.key ? "secondary" : "ghost"}
+              className="w-full justify-start gap-2 h-9 text-sm"
+              onClick={() => setActiveView(item.key)}
             >
-              <item.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="flex-1 truncate text-xs">{item.label}</span>
-              {item.badge && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
-                  {item.badge}
-                </Badge>
-              )}
-            </div>
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Button>
           ))}
+        </nav>
+
+        <Separator />
+
+        {/* Features */}
+        <div className="p-3">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Features
+          </span>
+          <div className="mt-2 space-y-0.5">
+            {featureItems.map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground"
+              >
+                <item.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="flex-1 truncate text-xs">{item.label}</span>
+                {item.badge && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
+                    {item.badge}
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <Separator />
+        <Separator />
 
-      {/* Chat History */}
-      <div className="p-3">
-        <ChatHistoryPanel />
-      </div>
+        {/* Chat History */}
+        <div className="p-3">
+          <ChatHistoryPanel />
+        </div>
 
-      <Separator />
+        <Separator />
 
-      {/* Data Sources */}
-      <div className="p-3 flex-1 min-h-0 flex flex-col">
+        {/* Data Sources */}
+        <div className="p-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Data Sources
@@ -215,8 +219,7 @@ export function AppSidebar() {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="space-y-1">
+        <div className="space-y-1">
             {loading ? (
               <p className="text-xs text-muted-foreground px-2 py-1">
                 Loading...
