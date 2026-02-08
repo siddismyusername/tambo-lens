@@ -14,6 +14,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow public report access via share token
+  if (
+    pathname.match(/^\/api\/reports\/[^/]+$/) &&
+    req.nextUrl.searchParams.has("token")
+  ) {
+    return NextResponse.next();
+  }
+
   // Protect all other API routes — return 401 if not authenticated
   if (pathname.startsWith("/api/")) {
     const token = await getToken({ req, secret: process.env.AUTH_SECRET });

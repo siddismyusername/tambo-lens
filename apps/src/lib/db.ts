@@ -171,6 +171,18 @@ export async function initializeDatabase(): Promise<void> {
         sort_order INTEGER DEFAULT 0,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS reports (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        data_source_id UUID REFERENCES data_sources(id) ON DELETE SET NULL,
+        thread_id VARCHAR(500),
+        title VARCHAR(1000) NOT NULL,
+        markdown_content TEXT NOT NULL,
+        share_token VARCHAR(64) UNIQUE NOT NULL,
+        message_count INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
 
     await client.query(`

@@ -7,9 +7,25 @@ import { DataSourcesView } from "@/components/views/data-sources-view";
 import { SchemaBrowserView } from "@/components/views/schema-browser-view";
 import { PermissionsView } from "@/components/views/permissions-view";
 import { DashboardsView } from "@/components/views/dashboards-view";
+import { ReportView } from "@/components/views/report-view";
+import { useState, useEffect } from "react";
+import type { Report } from "@/lib/types";
 
 export function AppShell() {
   const { activeView } = useAppContext();
+  const [currentReport, setCurrentReport] = useState<Report | null>(null);
+
+  // Load report from sessionStorage when view switches to "report"
+  useEffect(() => {
+    if (activeView === "report") {
+      try {
+        const raw = sessionStorage.getItem("tambo-lens-report");
+        if (raw) setCurrentReport(JSON.parse(raw));
+      } catch {
+        // ignore
+      }
+    }
+  }, [activeView]);
 
   const renderView = () => {
     switch (activeView) {
@@ -23,6 +39,8 @@ export function AppShell() {
         return <PermissionsView />;
       case "dashboards":
         return <DashboardsView />;
+      case "report":
+        return currentReport ? <ReportView report={currentReport} /> : <AnalyticsChat />;
       default:
         return <AnalyticsChat />;
     }

@@ -254,3 +254,25 @@ export interface SuggestedQuestion {
   sortOrder: number;
   createdAt: string;
 }
+
+// ──── Report Generator ───────────────────────────────────────────────────────
+
+export interface Report {
+  id: string;
+  userId?: string;
+  dataSourceId?: string;
+  threadId?: string;
+  title: string;
+  markdownContent: string;
+  shareToken: string;
+  messageCount: number;
+  createdAt: string;
+}
+
+/** Compact representation of a single chat turn sent to the report generator */
+export interface ReportThreadMessage {
+  role: "user" | "assistant";
+  text: string;
+  componentName?: string;
+  componentProps?: Record<string, unknown>;
+}

@@ -124,3 +124,49 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── Print styles for report export ────────────────────────────────────────── */
+@media print {
+  /* Hide everything except the report */
+  body * {
+    visibility: hidden;
+  }
+  .report-printable,
+  .report-printable * {
+    visibility: visible;
+  }
+  .report-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 2rem;
+  }
+
+  /* Hide toolbar, sidebar, nav — anything with report-toolbar class */
+  .report-toolbar {
+    display: none !important;
+  }
+
+  /* Remove shadows and borders for clean print */
+  .report-article {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Ensure text is black on white */
+  .report-printable {
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  /* Prevent page breaks inside elements */
+  .report-article h2,
+  .report-article h3 {
+    page-break-after: avoid;
+  }
+  .report-article p,
+  .report-article li {
+    page-break-inside: avoid;
+  }
+}
