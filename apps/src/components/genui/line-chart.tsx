@@ -68,51 +68,75 @@ export function LineChartComponent({
         <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[350px] w-full">
-          {/* ChartContainer already provides ResponsiveContainer — do NOT nest another one */}
-          <RechartsLineChart
-            data={chartData}
-            margin={{ top: 5, right: 20, bottom: needsAngle ? 60 : 30, left: 20 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 11 }}
-              angle={needsAngle ? -45 : 0}
-              textAnchor={needsAngle ? "end" : "middle"}
-              height={needsAngle ? 70 : 40}
-              interval={0}
-              label={
-                xAxisLabel && !needsAngle
-                  ? { value: xAxisLabel, position: "bottom", offset: 10 }
-                  : undefined
-              }
-            />
-            <YAxis
-              tick={{ fontSize: 11 }}
-              width={60}
-              label={
-                yAxisLabel
-                  ? { value: yAxisLabel, angle: -90, position: "insideLeft", offset: -5 }
-                  : undefined
-              }
-            />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Legend verticalAlign="top" height={30} />
-            {seriesNames.map((name, i) => (
-              <Line
-                key={name}
-                type="monotone"
-                dataKey={name}
-                stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                strokeWidth={2.5}
-                dot={{ r: 4, fill: CHART_COLORS[i % CHART_COLORS.length] }}
-                activeDot={{ r: 6 }}
-                connectNulls
+        <div role="img" aria-label={`Line chart: ${title}. ${seriesNames.length} series, ${chartData.length} data points.`}>
+          <ChartContainer config={chartConfig} className="h-[350px] w-full">
+            {/* ChartContainer already provides ResponsiveContainer — do NOT nest another one */}
+            <RechartsLineChart
+              data={chartData}
+              margin={{ top: 5, right: 20, bottom: needsAngle ? 60 : 30, left: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11 }}
+                angle={needsAngle ? -45 : 0}
+                textAnchor={needsAngle ? "end" : "middle"}
+                height={needsAngle ? 70 : 40}
+                interval={0}
+                label={
+                  xAxisLabel && !needsAngle
+                    ? { value: xAxisLabel, position: "bottom", offset: 10 }
+                    : undefined
+                }
               />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                width={60}
+                label={
+                  yAxisLabel
+                    ? { value: yAxisLabel, angle: -90, position: "insideLeft", offset: -5 }
+                    : undefined
+                }
+              />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Legend verticalAlign="top" height={30} />
+              {seriesNames.map((name, i) => (
+                <Line
+                  key={name}
+                  type="monotone"
+                  dataKey={name}
+                  stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: CHART_COLORS[i % CHART_COLORS.length] }}
+                  activeDot={{ r: 6 }}
+                  connectNulls
+                />
+              ))}
+            </RechartsLineChart>
+          </ChartContainer>
+        </div>
+        {/* Screen-reader accessible data table */}
+        <table className="sr-only">
+          <caption>{title}</caption>
+          <thead>
+            <tr>
+              <th>{xAxisLabel || "Label"}</th>
+              {seriesNames.map((name) => (
+                <th key={name}>{name}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((d, i) => (
+              <tr key={i}>
+                <td>{d.name as string}</td>
+                {seriesNames.map((name) => (
+                  <td key={name}>{d[name] as number}</td>
+                ))}
+              </tr>
             ))}
-          </RechartsLineChart>
-        </ChartContainer>
+          </tbody>
+        </table>
       </CardContent>
     </Card>
   );

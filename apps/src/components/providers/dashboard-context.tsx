@@ -116,7 +116,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (dashboard.items.length === 0 && !dashboard.id) return;
 
     const timeout = setTimeout(() => {
-      syncToServer(dashboard).catch(() => {
+      syncToServer(dashboard, setDashboard).catch(() => {
         // silently ignore server save failures
       });
     }, 1500);
@@ -221,7 +221,10 @@ export function useDashboard() {
 
 // ── Server sync ──────────────────────────────────────────────────────────────
 
-async function syncToServer(data: DashboardData) {
+async function syncToServer(
+  data: DashboardData,
+  setDashboard: React.Dispatch<React.SetStateAction<DashboardData>>
+) {
   try {
     const body = {
       name: data.name,
@@ -251,9 +254,13 @@ async function syncToServer(data: DashboardData) {
       });
       const json = await res.json();
       if (json.success && json.data?.id) {
-        // Store the server ID so future saves are updates
-        const updated = { ...data, id: json.data.id };
-        saveToStorage(updated);
+        // Store the server ID in both localStorage AND React state
+        // so the next sync does an update instead of another create
+        setDashboard((prev) => {
+          const updated = { ...prev, id: json.data.id };
+          saveToStorage(updated);
+          return updated;
+        });
       }
     }
   } catch {

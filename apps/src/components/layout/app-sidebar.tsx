@@ -2,7 +2,9 @@
 
 import { useEffect } from "react";
 import { useAppContext } from "@/components/providers/app-context";
-import { useDataSources } from "@/hooks/use-data-sources";
+import { useDataSourceContext } from "@/components/providers/data-source-context";
+import { useTheme } from "@/components/providers/theme-provider";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useSession, signOut } from "next-auth/react";
 import { ChatHistoryPanel } from "@/components/views/chat-history-panel";
 import { Button } from "@/components/ui/button";
@@ -29,6 +31,8 @@ import {
   Lock,
   SearchCode,
   BarChart3,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { AlertsFeed, AlertsFeedCollapsed } from "@/components/views/alerts-feed";
 
@@ -42,8 +46,10 @@ export function AppSidebar() {
     setSidebarOpen,
   } = useAppContext();
 
-  const { dataSources, loading } = useDataSources();
+  const { dataSources, loading } = useDataSourceContext();
   const { data: session } = useSession();
+  const { resolved, setTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   // Auto-select the first connected data source when none is active
   useEffect(() => {
@@ -83,6 +89,12 @@ export function AppSidebar() {
   };
 
   if (!sidebarOpen) {
+    // On mobile, the sidebar is hidden via AppShell overlay — render the full sidebar
+    // but let AppShell's translate-x-full handle visibility.
+    // On desktop, show the collapsed icon bar.
+    if (isMobile) {
+      return null; // Hidden — AppShell controls mobile sidebar visibility
+    }
     return (
       <div className="w-12 shrink-0 border-r bg-sidebar flex flex-col items-center py-4 gap-2 h-full">
         <Button
@@ -124,15 +136,30 @@ export function AppSidebar() {
         </div>
         <div className="mt-auto shrink-0">
           <Separator />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 mt-2"
-            onClick={() => signOut()}
-            title="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <div className="flex flex-col items-center gap-1 mt-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
+              title={`Switch to ${resolved === "dark" ? "light" : "dark"} mode`}
+            >
+              {resolved === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => signOut()}
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -290,6 +317,19 @@ export function AppSidebar() {
                 {session.user.email}
               </p>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0"
+              onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
+              title={`Switch to ${resolved === "dark" ? "light" : "dark"} mode`}
+            >
+              {resolved === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
             <Button
               variant="ghost"
               size="icon"

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ export function AuthView() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,8 +62,8 @@ export function AuthView() {
             : "Account created but sign-in failed. Try signing in."
         );
       } else {
-        // Successful sign-in — reload to show the app
-        window.location.reload();
+        // Successful sign-in — refresh the page via Next.js router (no full reload)
+        router.refresh();
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -93,7 +95,7 @@ export function AuthView() {
       if (result?.error) {
         setError("Demo login failed. Make sure the database is initialized.");
       } else {
-        window.location.reload();
+        router.refresh();
       }
     } catch {
       setError("Something went wrong. Please try again.");

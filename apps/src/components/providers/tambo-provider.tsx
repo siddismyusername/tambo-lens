@@ -1,10 +1,13 @@
 "use client";
 
+// Polyfill crypto.randomUUID before @tambo-ai/react uses it
+import "@/lib/polyfills";
+
 import { TamboProvider } from "@tambo-ai/react";
 import { tamboLensComponents } from "@/lib/tambo/components";
 import { tamboLensTools } from "@/lib/tambo/tools";
 import { useAppContext } from "@/components/providers/app-context";
-import { useDataSources } from "@/hooks/use-data-sources";
+import { useDataSourceContext } from "@/components/providers/data-source-context";
 import { useEffect, useMemo, useRef } from "react";
 
 interface TamboLensProviderProps {
@@ -14,7 +17,7 @@ interface TamboLensProviderProps {
 export function TamboLensProvider({ children }: TamboLensProviderProps) {
   const apiKey = process.env.NEXT_PUBLIC_TAMBO_API_KEY;
   const { activeDataSourceId, setActiveDataSourceId } = useAppContext();
-  const { dataSources } = useDataSources();
+  const { dataSources } = useDataSourceContext();
 
   // Auto-select the first connected data source if none is active
   useEffect(() => {

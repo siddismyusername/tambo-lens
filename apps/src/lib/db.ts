@@ -1,4 +1,5 @@
 import { Pool, type PoolConfig } from "pg";
+import "./env"; // Validate env vars on first server-side import
 
 /**
  * Internal PostgreSQL connection pool for Tambo Lens metadata.
@@ -52,6 +53,8 @@ export async function queryOne<T = Record<string, unknown>>(
 export async function initializeDatabase(): Promise<void> {
   const client = await getPool().connect();
   try {
+    await client.query("BEGIN");
+
     // ── Users table (must come first — referenced by FKs) ──
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -215,6 +218,11 @@ export async function initializeDatabase(): Promise<void> {
         END IF;
       END $$;
     `);
+
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
   } finally {
     client.release();
   }

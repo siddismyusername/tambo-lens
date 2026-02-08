@@ -3,13 +3,14 @@ import {
   getReportById,
   getReportByShareToken,
 } from "@/lib/services/report-service";
+import { getCurrentUserId } from "@/lib/auth";
 import type { ApiResponse, Report } from "@/lib/types";
 
 /**
  * GET /api/reports/[id] — Fetch a single report
  *
  * Supports two access patterns:
- *  1. By ID (requires auth — handled by middleware)
+ *  1. By ID (requires auth + ownership)
  *  2. By share token: ?token=<shareToken> (public, no auth needed)
  */
 export async function GET(
@@ -27,7 +28,21 @@ export async function GET(
       // Public access by share token — skip auth (middleware already passed)
       report = await getReportByShareToken(shareToken);
     } else {
+      // Authenticated access — verify the report belongs to the user
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        return NextResponse.json(
+          { success: false, error: "Authentication required" },
+          { status: 401 }
+        );
+      }
       report = await getReportById(id);
+      if (report && report.userId && report.userId !== userId) {
+        return NextResponse.json(
+          { success: false, error: "Access denied" },
+          { status: 403 }
+        );
+      }
     }
 
     if (!report) {

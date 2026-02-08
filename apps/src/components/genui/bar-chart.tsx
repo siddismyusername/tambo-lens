@@ -55,39 +55,59 @@ export function BarChartComponent({
         <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[350px] w-full">
-          {/* ChartContainer already provides ResponsiveContainer */}
-          <RechartsBarChart
-            data={chartData}
-            margin={{ top: 5, right: 20, bottom: needsAngle ? 60 : 30, left: 20 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 11 }}
-              angle={needsAngle ? -45 : 0}
-              textAnchor={needsAngle ? "end" : "middle"}
-              height={needsAngle ? 70 : 40}
-              interval={0}
-              label={
-                xAxisLabel && !needsAngle
-                  ? { value: xAxisLabel, position: "bottom", offset: 10 }
-                  : undefined
-              }
-            />
-            <YAxis
-              tick={{ fontSize: 11 }}
-              width={60}
-              label={
-                yAxisLabel
-                  ? { value: yAxisLabel, angle: -90, position: "insideLeft", offset: -5 }
-                  : undefined
-              }
-            />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]} />
-          </RechartsBarChart>
-        </ChartContainer>
+        <div role="img" aria-label={`Bar chart: ${title}. ${chartData.length} data points.`}>
+          <ChartContainer config={chartConfig} className="h-[350px] w-full">
+            {/* ChartContainer already provides ResponsiveContainer */}
+            <RechartsBarChart
+              data={chartData}
+              margin={{ top: 5, right: 20, bottom: needsAngle ? 60 : 30, left: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11 }}
+                angle={needsAngle ? -45 : 0}
+                textAnchor={needsAngle ? "end" : "middle"}
+                height={needsAngle ? 70 : 40}
+                interval={0}
+                label={
+                  xAxisLabel && !needsAngle
+                    ? { value: xAxisLabel, position: "bottom", offset: 10 }
+                    : undefined
+                }
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                width={60}
+                label={
+                  yAxisLabel
+                    ? { value: yAxisLabel, angle: -90, position: "insideLeft", offset: -5 }
+                    : undefined
+                }
+              />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} />
+            </RechartsBarChart>
+          </ChartContainer>
+        </div>
+        {/* Screen-reader accessible data table */}
+        <table className="sr-only">
+          <caption>{title}</caption>
+          <thead>
+            <tr>
+              <th>{xAxisLabel || "Category"}</th>
+              <th>{yAxisLabel || "Value"}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((d, i) => (
+              <tr key={i}>
+                <td>{d.name}</td>
+                <td>{d.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </CardContent>
     </Card>
   );

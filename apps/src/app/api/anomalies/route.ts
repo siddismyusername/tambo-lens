@@ -6,6 +6,11 @@ import {
   markAlertsSeen,
   dismissAlert,
 } from "@/lib/services/anomaly-service";
+import {
+  assertDataSourceOwnership,
+  AccessDeniedError,
+  NotFoundError,
+} from "@/lib/services/data-source-service";
 import type { ApiResponse, AnomalyAlert } from "@/lib/types";
 
 /**
@@ -23,6 +28,12 @@ export async function GET(
 ): Promise<NextResponse<ApiResponse<AnomalyAlert[]>>> {
   try {
     const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
     const { searchParams } = req.nextUrl;
     const dataSourceId = searchParams.get("dataSourceId");
     const includeDismissed = searchParams.get("dismissed") === "true";
@@ -31,15 +42,20 @@ export async function GET(
     let alerts: AnomalyAlert[];
 
     if (dataSourceId) {
+      await assertDataSourceOwnership(dataSourceId, userId);
       alerts = await getAlerts(dataSourceId, { includeDismissed, limit });
-    } else if (userId) {
-      alerts = await getAlertsByUser(userId, { includeDismissed, limit });
     } else {
-      alerts = [];
+      alerts = await getAlertsByUser(userId, { includeDismissed, limit });
     }
 
     return NextResponse.json({ success: true, data: alerts });
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 404 });
+    }
+    if (err instanceof AccessDeniedError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 403 });
+    }
     return NextResponse.json(
       {
         success: false,

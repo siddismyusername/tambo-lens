@@ -48,35 +48,55 @@ export function PieChartComponent({ title = "", data = [] }: PieChartProps) {
         <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[350px] w-full">
-          <RechartsPieChart>
-            <Pie
-              data={chartData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              innerRadius={40}
-              paddingAngle={2}
-              label={({ name, percent }) =>
-                `${name} (${(percent * 100).toFixed(0)}%)`
-              }
-              labelLine={false}
-            >
-              {chartData.map((entry, i) => (
-                <Cell
-                  key={`cell-${i}`}
-                  fill={entry.fill}
-                  stroke="hsl(var(--background))"
-                  strokeWidth={2}
-                />
-              ))}
-            </Pie>
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Legend verticalAlign="bottom" height={30} />
-          </RechartsPieChart>
-        </ChartContainer>
+        <div role="img" aria-label={`Pie chart: ${title}. ${chartData.length} segments.`}>
+          <ChartContainer config={chartConfig} className="h-[350px] w-full">
+            <RechartsPieChart>
+              <Pie
+                data={chartData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                innerRadius={40}
+                paddingAngle={2}
+                label={({ name, percent }) =>
+                  `${name} (${(percent * 100).toFixed(0)}%)`
+                }
+                labelLine={false}
+              >
+                {chartData.map((entry, i) => (
+                  <Cell
+                    key={`cell-${i}`}
+                    fill={entry.fill}
+                    stroke="hsl(var(--background))"
+                    strokeWidth={2}
+                  />
+                ))}
+              </Pie>
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Legend verticalAlign="bottom" height={30} />
+            </RechartsPieChart>
+          </ChartContainer>
+        </div>
+        {/* Screen-reader accessible data table */}
+        <table className="sr-only">
+          <caption>{title}</caption>
+          <thead>
+            <tr>
+              <th>Segment</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((d, i) => (
+              <tr key={i}>
+                <td>{d.name}</td>
+                <td>{d.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </CardContent>
     </Card>
   );

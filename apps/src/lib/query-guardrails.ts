@@ -74,9 +74,14 @@ export function validateQuery(
   }
 
   // 4. Check for multiple statements (SQL injection vector)
-  const semiColonStripped = sql.replace(/'[^']*'/g, "").replace(/"[^"]*"/g, "");
-  if (semiColonStripped.includes(";")) {
-    const statementsCount = semiColonStripped.split(";").filter((s) => s.trim()).length;
+  // Strip string literals (handle PostgreSQL '' escape and multi-line), then check semicolons
+  const stringStripped = sql
+    .replace(/'(?:[^']|'')*'/g, "''")     // PostgreSQL single-quoted strings (with '' escapes)
+    .replace(/"(?:[^"]|"")*"/g, '""')     // Double-quoted identifiers
+    .replace(/--[^\n]*/g, "")             // Single-line comments
+    .replace(/\/\*[\s\S]*?\*\//g, "");    // Block comments
+  if (stringStripped.includes(";")) {
+    const statementsCount = stringStripped.split(";").filter((s) => s.trim()).length;
     if (statementsCount > 1) {
       errors.push("Multiple statements are not allowed");
     }
@@ -106,10 +111,17 @@ export function validateQuery(
     }
   }
 
-  // 6. Check for masked column exposure
+  // 6. Check for masked column exposure (scoped to referenced tables)
   for (const [table, columns] of Object.entries(maskedColumns)) {
+    // Only check columns from tables that are actually referenced in the query
+    const tableLower = table.toLowerCase();
+    if (!referencedTables.includes(tableLower)) continue;
     for (const col of columns) {
-      const colRegex = new RegExp(`\\b${col}\\b`, "i");
+      // Match column name as a word boundary, but also look for table-qualified refs
+      const colRegex = new RegExp(
+        `\\b(?:${table}\\.)?${col}\\b`,
+        "i"
+      );
       if (colRegex.test(sql)) {
         errors.push(`Access to masked column "${col}" in table "${table}" is not allowed`);
       }

@@ -8,12 +8,27 @@ import { SchemaBrowserView } from "@/components/views/schema-browser-view";
 import { PermissionsView } from "@/components/views/permissions-view";
 import { DashboardsView } from "@/components/views/dashboards-view";
 import { ReportView } from "@/components/views/report-view";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 import type { Report } from "@/lib/types";
 
 export function AppShell() {
-  const { activeView } = useAppContext();
+  const { activeView, sidebarOpen, setSidebarOpen } = useAppContext();
   const [currentReport, setCurrentReport] = useState<Report | null>(null);
+  const isMobile = useIsMobile();
+
+  // Auto-collapse sidebar on mobile
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [isMobile, setSidebarOpen]);
+
+  // Close sidebar when switching views on mobile
+  useEffect(() => {
+    if (isMobile && sidebarOpen) setSidebarOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView]);
 
   // Load report from sessionStorage when view switches to "report"
   useEffect(() => {
@@ -48,8 +63,39 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      <AppSidebar />
+      {/* Mobile overlay backdrop */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 transition-opacity"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      {/* Sidebar — on mobile it becomes a fixed overlay */}
+      <div
+        className={
+          isMobile
+            ? `fixed inset-y-0 left-0 z-50 transition-transform duration-200 ${
+                sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              }`
+            : ""
+        }
+      >
+        <AppSidebar />
+      </div>
       <main className="flex-1 flex flex-col min-w-0 min-h-0">
+        {isMobile && !sidebarOpen && (
+          <div className="flex items-center gap-2 p-2 border-b bg-background">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <span className="text-sm font-medium">Tambo Lens</span>
+          </div>
+        )}
         {renderView()}
       </main>
     </div>

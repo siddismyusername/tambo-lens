@@ -330,7 +330,8 @@ export const DEMO_CONNECTION_STRING =
 
 /**
  * Ensure the demo user has at least one data source.
- * Uses the hardcoded demo connection string.
+ * Uses DEMO_CONNECTION_STRING or DEMO_DATABASE_URL — refuses to fall back
+ * to DATABASE_URL because that is the metadata store and must never be exposed.
  * Returns the existing or newly-created data source, or null on failure.
  */
 export async function ensureDemoDataSource(
@@ -340,9 +341,13 @@ export async function ensureDemoDataSource(
   const existing = await getDataSources(userId);
   if (existing.length > 0) return existing[0];
 
-  const demoUrl =
-    DEMO_CONNECTION_STRING || process.env.DEMO_DATABASE_URL || process.env.DATABASE_URL;
-  if (!demoUrl) return null;
+  const demoUrl = DEMO_CONNECTION_STRING || process.env.DEMO_DATABASE_URL;
+  if (!demoUrl) {
+    console.warn(
+      "[ensureDemoDataSource] DEMO_DATABASE_URL not set — cannot provision demo source"
+    );
+    return null;
+  }
 
   try {
     const parsed = parseConnectionString(demoUrl);
@@ -394,4 +399,58 @@ function toSafe(ds: DataSource): DataSourceSafe {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { encryptedPassword, ...safe } = ds;
   return safe;
+}
+
+// ──── Ownership Assertions ───────────────────────────────────────────────────
+
+class AccessDeniedError extends Error {
+  constructor(message = "Access denied") {
+    super(message);
+    this.name = "AccessDeniedError";
+  }
+}
+
+class NotFoundError extends Error {
+  constructor(resource: string) {
+    super(`${resource} not found`);
+    this.name = "NotFoundError";
+  }
+}
+
+export { AccessDeniedError, NotFoundError };
+
+/**
+ * Verify that a data source belongs to the given user. Throws on mismatch.
+ * Returns the full DataSource row (with encrypted password) for further use.
+ */
+export async function assertDataSourceOwnership(
+  dataSourceId: string,
+  userId: string
+): Promise<DataSource> {
+  const row = await queryOne<DataSource & { userId: string | null }>(
+    `SELECT ${DS_COLUMNS}, user_id AS "userId" FROM data_sources WHERE id = $1`,
+    [dataSourceId]
+  );
+  if (!row) throw new NotFoundError("Data source");
+  if (row.userId && row.userId !== userId) {
+    throw new AccessDeniedError();
+  }
+  return row;
+}
+
+/**
+ * Verify that a dashboard belongs to the given user. Throws on mismatch.
+ */
+export async function assertDashboardOwnership(
+  dashboardId: string,
+  userId: string
+): Promise<void> {
+  const row = await queryOne<{ id: string; user_id: string | null }>(
+    `SELECT id, user_id FROM dashboards WHERE id = $1`,
+    [dashboardId]
+  );
+  if (!row) throw new NotFoundError("Dashboard");
+  if (row.user_id && row.user_id !== userId) {
+    throw new AccessDeniedError();
+  }
 }

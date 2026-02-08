@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserId } from "@/lib/auth";
 import { runAnomalyScan, getLatestScan } from "@/lib/services/anomaly-service";
+import {
+  assertDataSourceOwnership,
+  AccessDeniedError,
+  NotFoundError,
+} from "@/lib/services/data-source-service";
 import type { ApiResponse, AnomalyScan } from "@/lib/types";
 
 /**
@@ -16,6 +21,12 @@ export async function POST(
 ): Promise<NextResponse<ApiResponse<{ scanId: string; alertsFound: number }>>> {
   try {
     const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
     const body = await req.json();
     const { dataSourceId } = body;
 
@@ -26,9 +37,11 @@ export async function POST(
       );
     }
 
+    await assertDataSourceOwnership(dataSourceId, userId);
+
     const { scanId, alerts } = await runAnomalyScan(
       dataSourceId,
-      userId ?? undefined
+      userId
     );
 
     return NextResponse.json({
@@ -36,6 +49,12 @@ export async function POST(
       data: { scanId, alertsFound: alerts.length },
     });
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 404 });
+    }
+    if (err instanceof AccessDeniedError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 403 });
+    }
     return NextResponse.json(
       {
         success: false,
@@ -53,6 +72,13 @@ export async function GET(
   req: NextRequest
 ): Promise<NextResponse<ApiResponse<AnomalyScan | null>>> {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
     const { searchParams } = req.nextUrl;
     const dataSourceId = searchParams.get("dataSourceId");
 
@@ -63,9 +89,17 @@ export async function GET(
       );
     }
 
+    await assertDataSourceOwnership(dataSourceId, userId);
+
     const scan = await getLatestScan(dataSourceId);
     return NextResponse.json({ success: true, data: scan });
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 404 });
+    }
+    if (err instanceof AccessDeniedError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 403 });
+    }
     return NextResponse.json(
       {
         success: false,

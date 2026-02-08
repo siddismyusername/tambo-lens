@@ -3,6 +3,12 @@ import {
   getSuggestedQuestions,
   generateSuggestedQuestions,
 } from "@/lib/services/suggestion-service";
+import {
+  assertDataSourceOwnership,
+  AccessDeniedError,
+  NotFoundError,
+} from "@/lib/services/data-source-service";
+import { getCurrentUserId } from "@/lib/auth";
 import type { ApiResponse, SuggestedQuestion } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +21,13 @@ export async function GET(
   req: NextRequest
 ): Promise<NextResponse<ApiResponse<SuggestedQuestion[]>>> {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
     const dataSourceId = req.nextUrl.searchParams.get("dataSourceId");
     if (!dataSourceId) {
       return NextResponse.json(
@@ -23,9 +36,17 @@ export async function GET(
       );
     }
 
+    await assertDataSourceOwnership(dataSourceId, userId);
+
     const questions = await getSuggestedQuestions(dataSourceId);
     return NextResponse.json({ success: true, data: questions });
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 404 });
+    }
+    if (err instanceof AccessDeniedError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 403 });
+    }
     return NextResponse.json(
       {
         success: false,
@@ -49,6 +70,13 @@ export async function POST(
   >
 > {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
     const body = await req.json();
     const { dataSourceId } = body;
 
@@ -59,9 +87,17 @@ export async function POST(
       );
     }
 
+    await assertDataSourceOwnership(dataSourceId, userId);
+
     const questions = await generateSuggestedQuestions(dataSourceId);
     return NextResponse.json({ success: true, data: questions });
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 404 });
+    }
+    if (err instanceof AccessDeniedError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 403 });
+    }
     return NextResponse.json(
       {
         success: false,

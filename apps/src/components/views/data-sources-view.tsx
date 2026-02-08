@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { useDataSources } from "@/hooks/use-data-sources";
+import { useDataSourceContext } from "@/components/providers/data-source-context";
 import { useAppContext } from "@/components/providers/app-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -47,13 +49,14 @@ import {
 
 export function DataSourcesView() {
   const { dataSources, loading, addDataSource, removeDataSource, testConnection } =
-    useDataSources();
+    useDataSourceContext();
   const { setActiveDataSourceId, setActiveView } = useAppContext();
   const { data: session } = useSession();
   const isDemo = !!(session?.user as { isDemo?: boolean } | undefined)?.isDemo;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleTest = async (id: string) => {
     setTesting(id);
@@ -65,6 +68,7 @@ export function DataSourcesView() {
     setDeleting(id);
     await removeDataSource(id);
     setDeleting(null);
+    setConfirmDeleteId(null);
   };
 
   const statusBadge = (status: string) => {
@@ -197,19 +201,58 @@ export function DataSourcesView() {
                       >
                         Permissions
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => handleDelete(ds.id)}
-                        disabled={deleting === ds.id}
+                      <Dialog
+                        open={confirmDeleteId === ds.id}
+                        onOpenChange={(open) =>
+                          setConfirmDeleteId(open ? ds.id : null)
+                        }
                       >
-                        {deleting === ds.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3 w-3" />
-                        )}
-                      </Button>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            disabled={deleting === ds.id}
+                          >
+                            {deleting === ds.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-sm">
+                          <DialogHeader>
+                            <DialogTitle>Delete Data Source</DialogTitle>
+                            <DialogDescription>
+                              Are you sure you want to delete &ldquo;{ds.name}
+                              &rdquo;? This will remove all associated
+                              permissions, cached schemas, and audit logs. This
+                              action cannot be undone.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter className="gap-2 sm:gap-0">
+                            <DialogClose asChild>
+                              <Button variant="outline" size="sm">
+                                Cancel
+                              </Button>
+                            </DialogClose>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(ds.id)}
+                              disabled={deleting === ds.id}
+                            >
+                              {deleting === ds.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                <Trash2 className="h-3 w-3 mr-1" />
+                              )}
+                              Delete
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
                 </CardHeader>

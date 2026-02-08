@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-export async function proxy(req: NextRequest) {
+/**
+ * Next.js 16 proxy convention — edge middleware for authentication gating.
+ */
+async function handler(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Allow auth-related routes
@@ -28,7 +31,7 @@ export async function proxy(req: NextRequest) {
     if (!token) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
-        { status: 401 }
+        { status: 401 },
       );
     }
     return NextResponse.next();
@@ -37,6 +40,8 @@ export async function proxy(req: NextRequest) {
   // For all other routes (pages), let them through — the client handles auth gating
   return NextResponse.next();
 }
+
+export const proxy = handler;
 
 export const config = {
   // Match all routes except static files and Next.js internals

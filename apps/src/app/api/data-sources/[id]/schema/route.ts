@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDataSource, cacheSchema, getCachedSchema } from "@/lib/services/data-source-service";
+import {
+  cacheSchema,
+  getCachedSchema,
+  assertDataSourceOwnership,
+  AccessDeniedError,
+  NotFoundError,
+} from "@/lib/services/data-source-service";
 import { introspectPostgresSchema } from "@/lib/connectors/postgres";
+import { getCurrentUserId } from "@/lib/auth";
 import type { ApiResponse, DatabaseSchema } from "@/lib/types";
 
 /** GET /api/data-sources/[id]/schema — Get cached or fresh schema */
@@ -9,28 +16,36 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<ApiResponse<DatabaseSchema>>> {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
     const { id } = await params;
 
     // Try cache first
     const cached = await getCachedSchema(id);
     if (cached) {
+      // Still verify ownership even for cached results
+      await assertDataSourceOwnership(id, userId);
       return NextResponse.json({ success: true, data: cached });
     }
 
-    // Fresh introspection
-    const ds = await getDataSource(id);
-    if (!ds) {
-      return NextResponse.json(
-        { success: false, error: "Data source not found" },
-        { status: 404 }
-      );
-    }
-
+    // Fresh introspection — ownership check returns the full DataSource
+    const ds = await assertDataSourceOwnership(id, userId);
     const schema = await introspectPostgresSchema(ds);
     await cacheSchema(id, schema);
 
     return NextResponse.json({ success: true, data: schema });
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 404 });
+    }
+    if (err instanceof AccessDeniedError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 403 });
+    }
     return NextResponse.json(
       {
         success: false,
@@ -47,20 +62,26 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<ApiResponse<DatabaseSchema>>> {
   try {
-    const { id } = await params;
-    const ds = await getDataSource(id);
-    if (!ds) {
+    const userId = await getCurrentUserId();
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Data source not found" },
-        { status: 404 }
+        { success: false, error: "Authentication required" },
+        { status: 401 }
       );
     }
-
+    const { id } = await params;
+    const ds = await assertDataSourceOwnership(id, userId);
     const schema = await introspectPostgresSchema(ds);
     await cacheSchema(id, schema);
 
     return NextResponse.json({ success: true, data: schema });
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 404 });
+    }
+    if (err instanceof AccessDeniedError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: 403 });
+    }
     return NextResponse.json(
       {
         success: false,

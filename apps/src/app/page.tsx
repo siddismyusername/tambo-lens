@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { TamboLensProvider } from "@/components/providers/tambo-provider";
 import { AppProvider } from "@/components/providers/app-context";
 import { DashboardProvider } from "@/components/providers/dashboard-context";
+import { DataSourceProvider } from "@/components/providers/data-source-context";
 import { AppShell } from "@/components/layout/app-shell";
 import { AuthView } from "@/components/views/auth-view";
 import { Loader2 } from "lucide-react";
@@ -28,11 +29,13 @@ export default function Home() {
   // Authenticated — show the app
   return (
     <AppProvider>
-      <TamboLensProvider>
-        <DashboardProvider>
-          <AppShell />
-        </DashboardProvider>
-      </TamboLensProvider>
+      <DataSourceProvider>
+        <TamboLensProvider>
+          <DashboardProvider>
+            <AppShell />
+          </DashboardProvider>
+        </TamboLensProvider>
+      </DataSourceProvider>
     </AppProvider>
   );
 }

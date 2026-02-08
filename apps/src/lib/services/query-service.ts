@@ -1,4 +1,4 @@
-import { Pool } from "../../../node_modules/@types/pg";
+import { Pool } from "pg";
 import { createExternalPool } from "../connectors/postgres";
 import { validateQuery, enforceLimit } from "../query-guardrails";
 import {
@@ -13,7 +13,19 @@ import type { QueryResult, QueryValidation } from "../types";
 const poolCache = new Map<string, { pool: Pool; lastUsed: number }>();
 const POOL_TTL_MS = 5 * 60 * 1000; // 5 minutes idle TTL
 
+// Lazy cleanup: evict stale entries on each pool access instead of setInterval
+function evictStalePools() {
+  const now = Date.now();
+  for (const [id, entry] of poolCache) {
+    if (now - entry.lastUsed > POOL_TTL_MS) {
+      entry.pool.end().catch(() => { });
+      poolCache.delete(id);
+    }
+  }
+}
+
 function getOrCreatePool(dataSourceId: string, dataSource: Parameters<typeof createExternalPool>[0]): Pool {
+  evictStalePools();
   const cached = poolCache.get(dataSourceId);
   if (cached) {
     cached.lastUsed = Date.now();
@@ -24,18 +36,6 @@ function getOrCreatePool(dataSourceId: string, dataSource: Parameters<typeof cre
   return pool;
 }
 
-// Periodic cleanup of idle pools
-if (typeof setInterval !== "undefined") {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [id, entry] of poolCache) {
-      if (now - entry.lastUsed > POOL_TTL_MS) {
-        entry.pool.end().catch(() => { });
-        poolCache.delete(id);
-      }
-    }
-  }, 60_000);
-}
 
 /**
  * Execute a guarded, read-only query against a user's external database.
