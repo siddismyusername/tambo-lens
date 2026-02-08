@@ -3,7 +3,16 @@ import { getToken } from "next-auth/jwt";
 
 /**
  * Next.js 16 proxy convention — edge middleware for authentication gating.
+ *
+ * On Vercel (HTTPS), NextAuth v5 uses `__Secure-authjs.session-token` as the
+ * cookie name. `getToken()` must be told the correct `cookieName` and `salt`,
+ * otherwise it silently finds no token and returns null → 401.
  */
+
+function isSecureEnv(req: NextRequest): boolean {
+  return req.nextUrl.protocol === "https:";
+}
+
 async function handler(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -27,7 +36,18 @@ async function handler(req: NextRequest) {
 
   // Protect all other API routes — return 401 if not authenticated
   if (pathname.startsWith("/api/")) {
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+    const secure = isSecureEnv(req);
+    const cookieName = secure
+      ? "__Secure-authjs.session-token"
+      : "authjs.session-token";
+
+    const token = await getToken({
+      req,
+      secret: process.env.AUTH_SECRET,
+      cookieName,
+      salt: cookieName,
+    });
+
     if (!token) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
