@@ -22,4 +22,21 @@ echo "📂 Deploying from: $APP_DIR"
 
 # Pass all script arguments (e.g. --prod) to vercel
 cd "$APP_DIR"
-vercel "$@"
+DEPLOY_URL=$(vercel "$@" 2>&1 | tee /dev/tty | grep -oP 'https://[^\s]+\.vercel\.app' | tail -1)
+
+# Auto-initialize the database after deployment
+if [ -n "$DEPLOY_URL" ]; then
+  echo ""
+  echo "🔧 Initializing database at $DEPLOY_URL ..."
+  INIT_RESPONSE=$(curl -s -X POST "$DEPLOY_URL/api/init")
+  if echo "$INIT_RESPONSE" | grep -q '"success":true'; then
+    echo "✅ Database initialized successfully"
+  else
+    echo "⚠️  Init response: $INIT_RESPONSE"
+    echo "   You may need to run manually: curl -X POST $DEPLOY_URL/api/init"
+  fi
+else
+  echo ""
+  echo "⚠️  Could not detect deployment URL. Run manually after deploy:"
+  echo "   curl -X POST https://tambo-lens.vercel.app/api/init"
+fi
