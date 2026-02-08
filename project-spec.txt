@@ -1,11 +1,11 @@
 📘 Project Specification Report
-Project Name: IntentBoard
+Project Name: Tambo Lens
 An Intent‑Driven Generative Analytics Layer for Existing Business Databases
 
 1. Executive Summary
 Modern businesses store vast amounts of data in relational and document databases, yet extracting insights from this data remains slow, technical, and fragmented. Traditional BI tools require manual dashboard creation, SQL expertise, and constant maintenance, creating a dependency on data teams and limiting insight velocity.
 
-IntentBoard solves this problem by acting as a plug‑and‑play AI interface on top of existing databases. By securely connecting to a company’s current data sources and leveraging Generative UI (GenUI) powered by Tambo SDK and Model Context Protocol (MCP), IntentBoard allows users to explore, analyze, and visualize data using natural language, without writing SQL or building dashboards manually.
+Tambo Lens solves this problem by acting as a plug‑and‑play AI interface on top of existing databases. By securely connecting to a company’s current data sources and leveraging Generative UI (GenUI) powered by Tambo SDK and Model Context Protocol (MCP), Tambo Lens allows users to explore, analyze, and visualize data using natural language, without writing SQL or building dashboards manually.
 
 The system dynamically generates UI components (charts, tables, summaries) based on user intent while strictly enforcing data access permissions and query safety.
 
@@ -196,7 +196,7 @@ Frontend (React + Tambo)
  ├─ Generative Components
  └─ Persistent Dashboards
 
-Backend (IntentBoard Core)
+Backend (Tambo Lens Core)
  ├─ Auth & Org Management
  ├─ Credential Vault
  ├─ Schema Registry
@@ -333,9 +333,9 @@ Dashboard creation without SQL
 Positive user feedback on usability
 
 16. Conclusion
-IntentBoard represents a shift from static BI dashboards to intent‑driven analytics systems. By combining secure database access, MCP‑based orchestration, and Tambo‑powered Generative UI, the platform enables organizations to unlock insights from their existing data faster, safer, and with dramatically less friction.
+Tambo Lens represents a shift from static BI dashboards to intent‑driven analytics systems. By combining secure database access, MCP‑based orchestration, and Tambo‑powered Generative UI, the platform enables organizations to unlock insights from their existing data faster, safer, and with dramatically less friction.
 
-This project demonstrates a production‑ready application of Generative UI and positions IntentBoard as a foundational layer for the next generation of AI‑native business software.
+This project demonstrates a production‑ready application of Generative UI and positions Tambo Lens as a foundational layer for the next generation of AI‑native business software.
 
 
 
